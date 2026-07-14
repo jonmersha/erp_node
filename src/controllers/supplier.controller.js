@@ -19,7 +19,7 @@ export const getAllSuppliers = async (req, res) => {
 
 export const createSupplier = async (req, res) => {
   try {
-    const { id, name, contact, email, company_id, companyId } = req.body;
+    const { id, name, contact, email, company_id, companyId, certificate_url, is_authorized, status, createdBy } = req.body;
     console.log('Attempting to create supplier:', { name, companyId: company_id || companyId });
     
     const finalCompanyId = company_id || companyId;
@@ -30,8 +30,8 @@ export const createSupplier = async (req, res) => {
 
     const supplierId = id || crypto.randomUUID();
     const [result] = await pool.query(
-      'INSERT INTO suppliers (id, name, contact, email, company_id) VALUES (?, ?, ?, ?, ?)',
-      [supplierId, name, contact, email, finalCompanyId]
+      'INSERT INTO suppliers (id, name, contact, email, company_id, certificate_url, is_authorized, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [supplierId, name, contact, email, finalCompanyId, certificate_url || null, is_authorized ? 1 : 0, status || 'pending_approval', createdBy || null]
     );
     console.log('Supplier created successfully:', supplierId);
     res.status(201).json({ id: supplierId });
@@ -44,14 +44,38 @@ export const createSupplier = async (req, res) => {
 export const updateSupplier = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, contact, email } = req.body;
+    const { name, contact, email, certificate_url, is_authorized, status } = req.body;
     await pool.query(
-      'UPDATE suppliers SET name = ?, contact = ?, email = ? WHERE id = ?',
-      [name, contact, email, id]
+      'UPDATE suppliers SET name = ?, contact = ?, email = ?, certificate_url = ?, is_authorized = ?, status = ? WHERE id = ?',
+      [name, contact, email, certificate_url || null, is_authorized ? 1 : 0, status || 'inactive', id]
     );
     res.json({ message: 'Supplier updated' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update supplier' });
+  }
+};
+
+export const approveSupplier = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approverId } = req.body;
+    
+    // Four eyes principle: get the supplier to check created_by
+    const [suppliers] = await pool.query('SELECT created_by FROM suppliers WHERE id = ?', [id]);
+    if (suppliers.length === 0) return res.status(404).json({ error: 'Supplier not found' });
+    
+    if (suppliers[0].created_by === approverId) {
+      return res.status(403).json({ error: 'Maker cannot be the checker. You cannot approve this supplier.' });
+    }
+
+    await pool.query(
+      'UPDATE suppliers SET status = ?, is_authorized = ?, approved_by = ? WHERE id = ?',
+      ['active', 1, approverId, id]
+    );
+    res.json({ message: 'Supplier approved successfully' });
+  } catch (error) {
+    console.error('Error approving supplier:', error);
+    res.status(500).json({ error: 'Failed to approve supplier' });
   }
 };
 

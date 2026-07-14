@@ -25,12 +25,13 @@ export const getAllOutlets = async (req, res) => {
 
 export const createOutlet = async (req, res) => {
   try {
-    const { id, name, location, company_id, companyId } = req.body;
+    const { id, name, location, company_id, companyId, factoryId, factory_id } = req.body;
     const outletId = id || crypto.randomUUID();
     const finalCompanyId = company_id || companyId;
+    const finalFactoryId = factoryId || factory_id || null;
     await pool.query(
-      'INSERT INTO sales_outlets (id, name, location, company_id) VALUES (?, ?, ?, ?)',
-      [outletId, name, location, finalCompanyId]
+      'INSERT INTO sales_outlets (id, name, location, company_id, factory_id) VALUES (?, ?, ?, ?, ?)',
+      [outletId, name, location, finalCompanyId, finalFactoryId]
     );
     res.status(201).json({ id: outletId });
   } catch (error) {
@@ -41,10 +42,11 @@ export const createOutlet = async (req, res) => {
 export const updateOutlet = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, location } = req.body;
+    const { name, location, factoryId, factory_id } = req.body;
+    const finalFactoryId = factoryId || factory_id || null;
     await pool.query(
-      'UPDATE sales_outlets SET name = ?, location = ? WHERE id = ?',
-      [name, location, id]
+      'UPDATE sales_outlets SET name = ?, location = ?, factory_id = ? WHERE id = ?',
+      [name, location, finalFactoryId, id]
     );
     res.json({ message: 'Outlet updated' });
   } catch (error) {

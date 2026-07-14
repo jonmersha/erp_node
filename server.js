@@ -12,6 +12,9 @@ import categoryRoutes from './src/routes/category.routes.js';
 import inventoryRoutes from './src/routes/inventory.routes.js';
 import warehouseRoutes from './src/routes/warehouse.routes.js';
 import companyRoutes from './src/routes/company.routes.js';
+import departmentRoutes from './src/routes/department.routes.js';
+import attendanceRoutes from './src/routes/attendance.routes.js';
+import leaveRoutes from './src/routes/leave.routes.js';
 import userRoutes from './src/routes/user.routes.js';
 import roleRoutes from './src/routes/role.routes.js';
 import factoryRoutes from './src/routes/factory.routes.js';
@@ -101,6 +104,9 @@ apiRouter.use('/factories', factoryRoutes);
 apiRouter.use('/products', productRoutes);
 apiRouter.use('/categories', categoryRoutes);
 apiRouter.use('/employees', employeeRoutes);
+apiRouter.use('/departments', departmentRoutes);
+apiRouter.use('/attendance', attendanceRoutes);
+apiRouter.use('/leaves', leaveRoutes);
 
 // Grouped Modules
 apiRouter.use('/procurement', procurementRoutes);

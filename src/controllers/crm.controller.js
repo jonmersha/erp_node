@@ -29,7 +29,8 @@ export const createCustomer = async (req, res) => {
     );
     res.status(201).json({ id: customerId });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create customer' });
+    console.error('Customer creation error:', error);
+    res.status(500).json({ error: 'Failed to create customer', details: error.message });
   }
 };
 

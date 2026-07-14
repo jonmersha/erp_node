@@ -54,6 +54,8 @@ export const getAllPurchaseOrders = async (req, res) => {
       warehouseId: row.warehouse_id || null,
       totalAmount: row.total_amount,
       items: itemsByOrderId[row.id] || [],
+      createdBy: row.created_by,
+      approvedBy: row.approved_by,
       createdAt: row.created_at
     }));
     res.json(mappedRows);
@@ -76,6 +78,7 @@ export const createPurchaseOrder = async (req, res) => {
       status, 
       totalAmount, total_amount, 
       companyId, company_id,
+      createdBy,
       items 
     } = req.body;
 
@@ -114,8 +117,8 @@ export const createPurchaseOrder = async (req, res) => {
     }
 
     await connection.query(
-      'INSERT INTO purchase_orders (id, supplier_id, factory_id, warehouse_id, status, total_amount, company_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [orderId, finalSupplierId, finalFactoryId || null, finalWarehouseId || null, status || 'pending', finalTotalAmount, finalCompanyId]
+      'INSERT INTO purchase_orders (id, supplier_id, factory_id, warehouse_id, status, total_amount, company_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [orderId, finalSupplierId, finalFactoryId || null, finalWarehouseId || null, status || 'pending_approval', finalTotalAmount, finalCompanyId, createdBy || null]
     );
 
     if (items && Array.isArray(items)) {
@@ -178,5 +181,28 @@ export const deletePurchaseOrder = async (req, res) => {
     res.json({ message: 'Purchase order deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete purchase order' });
+  }
+};
+
+export const approvePurchaseOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approverId } = req.body;
+
+    const [orders] = await pool.query('SELECT created_by FROM purchase_orders WHERE id = ?', [id]);
+    if (orders.length === 0) return res.status(404).json({ error: 'Purchase order not found' });
+    
+    if (orders[0].created_by === approverId) {
+      return res.status(403).json({ error: 'Maker cannot be the checker. You cannot approve this purchase order.' });
+    }
+
+    await pool.query(
+      'UPDATE purchase_orders SET status = ?, approved_by = ? WHERE id = ?',
+      ['approved', approverId, id]
+    );
+    res.json({ message: 'Purchase order approved successfully' });
+  } catch (error) {
+    console.error('Error approving purchase order:', error);
+    res.status(500).json({ error: 'Failed to approve purchase order' });
   }
 };

@@ -18,7 +18,8 @@ export const getAllRawMaterials = async (req, res) => {
     }));
     res.json(mappedRows);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch raw materials' });
+    console.error("rawMaterial error:", error);
+    res.status(500).json({ error: 'Failed to fetch raw materials', details: error.message });
   }
 };
 
@@ -54,6 +55,7 @@ export const updateRawMaterial = async (req, res) => {
 export const deleteRawMaterial = async (req, res) => {
   try {
     const { id } = req.params;
+    await pool.query('DELETE FROM inventory WHERE item_id = ?', [id]);
     await pool.query('DELETE FROM raw_materials WHERE id = ?', [id]);
     res.json({ message: 'Raw material deleted' });
   } catch (error) {

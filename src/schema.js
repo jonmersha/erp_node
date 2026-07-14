@@ -35,7 +35,9 @@ export const initDb = async () => {
           name VARCHAR(255) NOT NULL,
           location TEXT NOT NULL,
           company_id CHAR(36) NOT NULL,
-          CONSTRAINT fk_factory_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+          manager_id VARCHAR(255),
+          CONSTRAINT fk_factory_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+          CONSTRAINT fk_factory_manager FOREIGN KEY (manager_id) REFERENCES users(uid) ON DELETE SET NULL
       ) ENGINE=InnoDB;
     `);
 
@@ -45,7 +47,9 @@ export const initDb = async () => {
           name VARCHAR(255) NOT NULL,
           location TEXT NOT NULL,
           company_id CHAR(36) NOT NULL,
-          CONSTRAINT fk_outlet_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+          factory_id CHAR(36),
+          CONSTRAINT fk_outlet_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+          CONSTRAINT fk_outlet_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
 
@@ -56,6 +60,11 @@ export const initDb = async () => {
           contact VARCHAR(255),
           email VARCHAR(255),
           company_id CHAR(36) NOT NULL,
+          certificate_url VARCHAR(500),
+          is_authorized BOOLEAN DEFAULT FALSE,
+          status ENUM('pending_approval', 'active', 'inactive') DEFAULT 'pending_approval',
+          created_by VARCHAR(36),
+          approved_by VARCHAR(36),
           CONSTRAINT fk_supplier_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
@@ -101,8 +110,10 @@ export const initDb = async () => {
           location TEXT NOT NULL,
           factory_id CHAR(36),
           company_id CHAR(36) NOT NULL,
+          manager_id VARCHAR(255),
           CONSTRAINT fk_warehouse_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-          CONSTRAINT fk_warehouse_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE
+          CONSTRAINT fk_warehouse_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE,
+          CONSTRAINT fk_warehouse_manager FOREIGN KEY (manager_id) REFERENCES users(uid) ON DELETE SET NULL
       ) ENGINE=InnoDB;
     `);
 
@@ -122,18 +133,78 @@ export const initDb = async () => {
     `);
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS departments (
+          id CHAR(36) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          parent_department_id CHAR(36),
+          manager_id CHAR(36),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_dept_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+          CONSTRAINT fk_dept_parent FOREIGN KEY (parent_department_id) REFERENCES departments(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB;
+    `);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS employees (
           id CHAR(36) PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           email VARCHAR(255) NOT NULL,
-          department VARCHAR(100),
           role VARCHAR(100),
           salary DECIMAL(12, 2),
           factory_id CHAR(36),
           hire_date DATE,
+          department_id CHAR(36),
+          manager_id CHAR(36),
           company_id CHAR(36) NOT NULL,
           CONSTRAINT fk_employee_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-          CONSTRAINT fk_employee_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE
+          CONSTRAINT fk_employee_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE,
+          CONSTRAINT fk_employee_dept FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
+          CONSTRAINT fk_employee_manager FOREIGN KEY (manager_id) REFERENCES employees(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB;
+    `);
+    
+    // Add manager_id FK to departments (has to be after employees is created)
+    try {
+      await pool.query(`
+        ALTER TABLE departments 
+        ADD CONSTRAINT fk_dept_manager FOREIGN KEY (manager_id) REFERENCES employees(id) ON DELETE SET NULL;
+      `);
+    } catch(e) {
+      if (e.code !== 'ER_DUP_KEYNAME') console.error(e.message);
+    }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS attendance (
+          id CHAR(36) PRIMARY KEY,
+          employee_id CHAR(36) NOT NULL,
+          date DATE NOT NULL,
+          clock_in DATETIME,
+          clock_out DATETIME,
+          status ENUM('present', 'absent', 'late', 'half_day') DEFAULT 'absent',
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_att_employee FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+          CONSTRAINT fk_att_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS leave_requests (
+          id CHAR(36) PRIMARY KEY,
+          employee_id CHAR(36) NOT NULL,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL,
+          type ENUM('annual', 'sick', 'maternity', 'unpaid', 'other') NOT NULL,
+          reason TEXT,
+          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          approved_by CHAR(36),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_lr_employee FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+          CONSTRAINT fk_lr_approver FOREIGN KEY (approved_by) REFERENCES employees(id) ON DELETE SET NULL,
+          CONSTRAINT fk_lr_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
 
@@ -203,9 +274,11 @@ export const initDb = async () => {
           supplier_id CHAR(36) NOT NULL,
           factory_id CHAR(36),
           warehouse_id CHAR(36),
-          status ENUM('pending', 'approved', 'shipped', 'received', 'cancelled') DEFAULT 'pending',
+          status ENUM('pending', 'pending_approval', 'approved', 'shipped', 'received', 'cancelled') DEFAULT 'pending_approval',
           total_amount DECIMAL(12, 2) NOT NULL,
           company_id CHAR(36) NOT NULL,
+          created_by VARCHAR(36),
+          approved_by VARCHAR(36),
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT fk_po_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
           CONSTRAINT fk_po_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE,
@@ -253,8 +326,10 @@ export const initDb = async () => {
           year INT NOT NULL,
           total_quantity DECIMAL(12, 2) NOT NULL,
           quarterly_plans JSON,
-          status ENUM('planned', 'ordered', 'received', 'approved') DEFAULT 'planned',
+          status ENUM('planned', 'pending_approval', 'ordered', 'received', 'approved') DEFAULT 'pending_approval',
           company_id CHAR(36) NOT NULL,
+          created_by VARCHAR(36),
+          approved_by VARCHAR(36),
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT fk_procplan_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
           CONSTRAINT fk_procplan_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE,
@@ -271,8 +346,10 @@ export const initDb = async () => {
           year INT NOT NULL,
           total_quantity DECIMAL(12, 2) NOT NULL,
           quarterly_plans JSON,
-          status ENUM('draft', 'approved') DEFAULT 'draft',
+          status ENUM('draft', 'pending_approval', 'approved') DEFAULT 'pending_approval',
           company_id CHAR(36) NOT NULL,
+          created_by VARCHAR(36),
+          approved_by VARCHAR(36),
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT fk_salesplan_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
           CONSTRAINT fk_salesplan_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE,
@@ -288,8 +365,10 @@ export const initDb = async () => {
           year INT NOT NULL,
           total_quantity DECIMAL(12, 2) NOT NULL,
           quarterly_plans JSON,
-          status ENUM('draft', 'approved') DEFAULT 'draft',
+          status ENUM('draft', 'pending_approval', 'approved') DEFAULT 'pending_approval',
           company_id CHAR(36) NOT NULL,
+          created_by VARCHAR(36),
+          approved_by VARCHAR(36),
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT fk_prodplan_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
           CONSTRAINT fk_prodplan_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE,
@@ -377,6 +456,14 @@ export const initDb = async () => {
     `).catch(console.error);
 
     console.log('Database schema initialization completed.');
+
+    try {
+      await pool.query('ALTER TABLE sales_outlets ADD COLUMN factory_id CHAR(36) NULL;');
+      await pool.query('ALTER TABLE sales_outlets ADD CONSTRAINT fk_outlet_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE;');
+      console.log('Added factory_id to sales_outlets.');
+    } catch (e) {
+      // Ignore if column already exists
+    }
   } catch (err) {
     console.error('DB Init error:', err);
   }

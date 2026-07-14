@@ -93,6 +93,7 @@ export const deleteProduct = async (req, res) => {
     const { id } = req.params;
     const [rows] = await pool.query('SELECT image_url FROM products WHERE id = ?', [id]);
     
+    await pool.query('DELETE FROM inventory WHERE item_id = ?', [id]);
     await pool.query('DELETE FROM products WHERE id = ?', [id]);
     
     if (rows.length > 0 && rows[0].image_url) {

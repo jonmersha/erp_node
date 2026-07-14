@@ -8,14 +8,25 @@ export const getAllEmployees = async (req, res) => {
       return res.status(400).json({ error: 'User is not associated with a company' });
     }
 
-    const [rows] = await pool.query('SELECT * FROM employees WHERE company_id = ?', [companyId]);
+    const query = `
+      SELECT e.*, d.name as department_name, m.name as manager_name
+      FROM employees e
+      LEFT JOIN departments d ON e.department_id = d.id
+      LEFT JOIN employees m ON e.manager_id = m.id
+      WHERE e.company_id = ?
+    `;
+    const [rows] = await pool.query(query, [companyId]);
     
     // map snake_case to camelCase
     const mappedRows = rows.map(row => ({
       ...row,
       factoryId: row.factory_id,
       companyId: row.company_id,
-      hireDate: row.hire_date
+      hireDate: row.hire_date,
+      departmentId: row.department_id,
+      managerId: row.manager_id,
+      departmentName: row.department_name,
+      managerName: row.manager_name
     }));
     
     res.json(mappedRows);
@@ -27,7 +38,7 @@ export const getAllEmployees = async (req, res) => {
 
 export const createEmployee = async (req, res) => {
   try {
-    const { name, email, department, role, salary, factoryId, hireDate } = req.body;
+    const { name, email, departmentId, managerId, role, salary, factoryId, hireDate } = req.body;
     const companyId = req.user?.company_id;
 
     if (!companyId) {
@@ -38,8 +49,8 @@ export const createEmployee = async (req, res) => {
     const formattedHireDate = hireDate ? new Date(hireDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
     
     await pool.query(
-      'INSERT INTO employees (id, name, email, department, role, salary, factory_id, hire_date, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, name, email, department, role, salary, factoryId, formattedHireDate, companyId]
+      'INSERT INTO employees (id, name, email, department_id, manager_id, role, salary, factory_id, hire_date, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, name, email, departmentId || null, managerId || null, role, salary, factoryId, formattedHireDate, companyId]
     );
     res.status(201).json({ id });
   } catch (error) {
@@ -51,7 +62,7 @@ export const createEmployee = async (req, res) => {
 export const updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, department, role, salary, factoryId, hireDate } = req.body;
+    const { name, email, departmentId, managerId, role, salary, factoryId, hireDate } = req.body;
     const companyId = req.user?.company_id;
 
     if (!companyId) {
@@ -61,8 +72,8 @@ export const updateEmployee = async (req, res) => {
     const formattedHireDate = hireDate ? new Date(hireDate).toISOString().split('T')[0] : null;
 
     const [result] = await pool.query(
-      'UPDATE employees SET name = ?, email = ?, department = ?, role = ?, salary = ?, factory_id = ?, hire_date = ? WHERE id = ? AND company_id = ?',
-      [name, email, department, role, salary, factoryId, formattedHireDate, id, companyId]
+      'UPDATE employees SET name = ?, email = ?, department_id = ?, manager_id = ?, role = ?, salary = ?, factory_id = ?, hire_date = ? WHERE id = ? AND company_id = ?',
+      [name, email, departmentId || null, managerId || null, role, salary, factoryId, formattedHireDate, id, companyId]
     );
 
     if (result.affectedRows === 0) {

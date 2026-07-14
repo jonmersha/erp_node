@@ -20,6 +20,8 @@ export const getAllProductionPlans = async (req, res) => {
       productId: row.product_id,
       totalQuantity: row.total_quantity,
       quarterlyPlans: row.quarterly_plans, // Will be auto-parsed if JSON column, or string. Better to parse.
+      createdBy: row.created_by,
+      approvedBy: row.approved_by,
       createdAt: new Date().toISOString() 
     }));
     
@@ -45,6 +47,7 @@ export const createProductionPlan = async (req, res) => {
       totalQuantity, total_quantity, 
       status, 
       companyId, company_id, 
+      createdBy,
       quarterlyPlans, quarterly_plans 
     } = req.body;
     
@@ -65,8 +68,8 @@ export const createProductionPlan = async (req, res) => {
 
     const id = crypto.randomUUID();
     await pool.query(
-      'INSERT INTO production_plans (id, factory_id, product_id, year, total_quantity, status, company_id, quarterly_plans) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, finalFactoryId, finalProductId, year, finalTotalQuantity, status || 'draft', finalCompanyId, JSON.stringify(finalQuarterlyPlans || [])]
+      'INSERT INTO production_plans (id, factory_id, product_id, year, total_quantity, status, company_id, quarterly_plans, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, finalFactoryId, finalProductId, year, finalTotalQuantity, status || 'pending_approval', finalCompanyId, JSON.stringify(finalQuarterlyPlans || []), createdBy || null]
     );
     res.status(201).json({ id });
   } catch (error) {
@@ -109,6 +112,29 @@ export const deleteProductionPlan = async (req, res) => {
     res.json({ message: 'Production plan deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete production plan' });
+  }
+};
+
+export const approveProductionPlan = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approverId } = req.body;
+
+    const [plans] = await pool.query('SELECT created_by FROM production_plans WHERE id = ?', [id]);
+    if (plans.length === 0) return res.status(404).json({ error: 'Plan not found' });
+    
+    if (plans[0].created_by === approverId) {
+      return res.status(403).json({ error: 'Maker cannot be the checker. You cannot approve this plan.' });
+    }
+
+    await pool.query(
+      'UPDATE production_plans SET status = ?, approved_by = ? WHERE id = ?',
+      ['approved', approverId, id]
+    );
+    res.json({ message: 'Plan approved successfully' });
+  } catch (error) {
+    console.error('Error approving plan:', error);
+    res.status(500).json({ error: 'Failed to approve plan' });
   }
 };
 
