@@ -172,7 +172,7 @@ export const initDb = async () => {
         ADD CONSTRAINT fk_dept_manager FOREIGN KEY (manager_id) REFERENCES employees(id) ON DELETE SET NULL;
       `);
     } catch(e) {
-      if (e.code !== 'ER_DUP_KEYNAME') console.error(e.message);
+      if (e.code !== 'ER_DUP_KEYNAME' && !e.message.includes('Duplicate foreign key')) console.error(e.message);
     }
 
     await pool.query(`
@@ -183,12 +183,19 @@ export const initDb = async () => {
           clock_in DATETIME,
           clock_out DATETIME,
           status ENUM('present', 'absent', 'late', 'half_day') DEFAULT 'absent',
+          overtime_hours DECIMAL(5,2) DEFAULT 0,
           company_id CHAR(36) NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT fk_att_employee FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
           CONSTRAINT fk_att_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
+
+    try {
+      await pool.query(`ALTER TABLE attendance ADD COLUMN overtime_hours DECIMAL(5,2) DEFAULT 0;`);
+    } catch(e) {
+      if (e.code !== 'ER_DUP_FIELDNAME' && !e.message.includes('Duplicate column')) console.error(e.message);
+    }
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS leave_requests (
@@ -394,17 +401,131 @@ export const initDb = async () => {
           id CHAR(36) PRIMARY KEY,
           factory_id CHAR(36) NOT NULL,
           product_id CHAR(36) NOT NULL,
-          recipe_id CHAR(36) NOT NULL,
+          recipe_id CHAR(36) NULL,
           quantity_planned DECIMAL(12, 2) NOT NULL,
           quantity_produced DECIMAL(12, 2) DEFAULT 0,
           status ENUM('scheduled', 'in_progress', 'completed', 'cancelled') DEFAULT 'scheduled',
           start_date DATETIME,
+          workflow_template_id CHAR(36) NULL,
           company_id CHAR(36) NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT fk_run_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
           CONSTRAINT fk_run_factory FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE,
           CONSTRAINT fk_run_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
           CONSTRAINT fk_run_recipe FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS workflow_templates (
+          id CHAR(36) PRIMARY KEY,
+          name VARCHAR(100) NOT NULL,
+          description TEXT,
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS workflow_template_stages (
+          id CHAR(36) PRIMARY KEY,
+          template_id CHAR(36) NOT NULL,
+          stage_name VARCHAR(100) NOT NULL,
+          stage_order INT NOT NULL,
+          estimated_time_minutes INT,
+          percentage_weight DECIMAL(5,2),
+          company_id CHAR(36) NOT NULL,
+          CONSTRAINT fk_template FOREIGN KEY (template_id) REFERENCES workflow_templates(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS production_run_stages (
+          id CHAR(36) PRIMARY KEY,
+          run_id CHAR(36) NOT NULL,
+          stage_name VARCHAR(100) NOT NULL,
+          stage_order INT NOT NULL,
+          estimated_time_minutes INT,
+          percentage_weight DECIMAL(5,2),
+          assigned_operator_id VARCHAR(255),
+          status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+          actual_time_minutes INT,
+          quantity_produced DECIMAL(10,2),
+          notes TEXT,
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_stage_run FOREIGN KEY (run_id) REFERENCES production_runs(id) ON DELETE CASCADE,
+          CONSTRAINT fk_stage_operator FOREIGN KEY (assigned_operator_id) REFERENCES users(uid) ON DELETE SET NULL
+      ) ENGINE=InnoDB;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS production_events (
+          id CHAR(36) PRIMARY KEY,
+          run_id CHAR(36) NOT NULL,
+          event_type VARCHAR(100) NOT NULL,
+          payload JSON,
+          notes TEXT,
+          performed_by CHAR(36),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_event_run FOREIGN KEY (run_id) REFERENCES production_runs(id) ON DELETE CASCADE,
+          CONSTRAINT fk_event_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    // Dedicated tables for automated/tablet data capture (Phase 2 Additions)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS grain_intake_logs (
+          id CHAR(36) PRIMARY KEY,
+          gross_weight DECIMAL(10,2) NOT NULL,
+          tare_weight DECIMAL(10,2) NOT NULL,
+          net_weight DECIMAL(10,2) GENERATED ALWAYS AS (gross_weight - tare_weight) STORED,
+          supplier_id CHAR(36),
+          moisture_percent DECIMAL(5,2),
+          silo_id VARCHAR(50),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          CONSTRAINT fk_intake_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
+          CONSTRAINT fk_intake_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS milling_logs (
+          id CHAR(36) PRIMARY KEY,
+          run_id CHAR(36) NOT NULL,
+          raw_wheat_consumed DECIMAL(10,2),
+          water_added DECIMAL(10,2),
+          extraction_rate DECIMAL(5,2),
+          machine_downtime_minutes INT DEFAULT 0,
+          maintenance_notes TEXT,
+          shift_operator_id CHAR(36),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          CONSTRAINT fk_milling_run FOREIGN KEY (run_id) REFERENCES production_runs(id) ON DELETE CASCADE,
+          CONSTRAINT fk_milling_operator FOREIGN KEY (shift_operator_id) REFERENCES users(id) ON DELETE SET NULL,
+          CONSTRAINT fk_milling_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS packaging_logs (
+          id CHAR(36) PRIMARY KEY,
+          machine_id VARCHAR(50) NOT NULL,
+          product_id CHAR(36),
+          bag_size_kg INT NOT NULL,
+          bag_count INT NOT NULL,
+          total_weight DECIMAL(10,2) GENERATED ALWAYS AS (bag_size_kg * bag_count) STORED,
+          warehouse_id CHAR(36),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          CONSTRAINT fk_packaging_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+          CONSTRAINT fk_packaging_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE SET NULL,
+          CONSTRAINT fk_packaging_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
 
@@ -452,6 +573,24 @@ export const initDb = async () => {
           company_id CHAR(36) NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT fk_qc_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS inventory_transactions (
+          id CHAR(36) PRIMARY KEY,
+          inventory_id CHAR(36) NOT NULL,
+          item_id CHAR(36) NOT NULL,
+          item_type ENUM('product', 'material') NOT NULL,
+          transaction_type ENUM('in', 'out', 'transfer', 'adjustment') NOT NULL,
+          quantity DECIMAL(12, 2) NOT NULL,
+          reference_id CHAR(36),
+          reference_type ENUM('purchase_order', 'sales_order', 'production_run', 'grn', 'delivery_note', 'manual') NOT NULL,
+          notes TEXT,
+          user_id VARCHAR(255),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_inv_tx_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `).catch(console.error);
 

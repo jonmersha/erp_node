@@ -4,7 +4,7 @@ import pool from '../db.js';
 
 // Initialize Firebase Admin with just the projectId (sufficient for verifying ID tokens)
 initializeApp({
-  projectId: "ai-studio-applet-webapp-717ba",
+  projectId: "sheger-systems",
 });
 
 export const authenticateToken = async (req, res, next) => {

@@ -33,6 +33,7 @@ import logisticsRoutes from './src/routes/logistics.routes.js';
 import financeRoutes from './src/routes/finance.routes.js';
 import financialPlanRoutes from './src/routes/financialPlan.routes.js';
 import crmRoutes from './src/routes/crm.routes.js';
+import workflowRoutes from './src/routes/workflow.routes.js';
 import pool from './src/db.js';
 import multer from 'multer';
 import path from 'path';
@@ -127,6 +128,7 @@ apiRouter.use('/productionPlans', productionPlanRoutes);
 apiRouter.use('/procurementPlans', procurementPlanRoutes);
 apiRouter.use('/recipes', recipeRoutes);
 apiRouter.use('/quality', qualityRoutes);
+apiRouter.use('/workflowTemplates', workflowRoutes);
 
 apiRouter.use('/grns', grnRoutes);
 apiRouter.use('/deliveryNotes', deliveryNoteRoutes);

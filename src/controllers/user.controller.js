@@ -57,17 +57,26 @@ export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
     const { email, name, roles, unit_id, unitId, company_id, companyId, status, performedBy } = req.body;
-    const finalUnitId = unit_id || unitId || null;
-    const finalCompanyId = company_id || companyId || null;
-    const finalStatus = status || 'active';
     
-    // 1. Fetch current user to compare roles
-    const [existing] = await pool.query('SELECT roles FROM users WHERE uid = ?', [id]);
+    // 1. Fetch current user to compare roles and fallback for missing fields
+    const [existing] = await pool.query('SELECT * FROM users WHERE uid = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const currentUser = existing[0];
+    
+    const finalEmail = email !== undefined ? email : currentUser.email;
+    const finalName = name !== undefined ? name : currentUser.name;
+    const finalRoles = roles !== undefined ? roles : currentUser.roles;
+    const finalUnitId = unit_id !== undefined ? unit_id : (unitId !== undefined ? unitId : currentUser.unit_id);
+    const finalCompanyId = company_id !== undefined ? company_id : (companyId !== undefined ? companyId : currentUser.company_id);
+    const finalStatus = status !== undefined ? status : currentUser.status;
     
     // 2. Perform the update
     await pool.query(
       'UPDATE users SET email = ?, name = ?, roles = ?, unit_id = ?, company_id = ?, status = ? WHERE uid = ?',
-      [email, name, JSON.stringify(roles), finalUnitId, finalCompanyId, finalStatus, id]
+      [finalEmail, finalName, JSON.stringify(finalRoles), finalUnitId, finalCompanyId, finalStatus, id]
     );
 
     // 3. Check for role changes and log if they differ
@@ -75,9 +84,9 @@ export const updateUser = async (req, res) => {
       const oldRoles = existing[0].roles ? (typeof existing[0].roles === 'string' ? JSON.parse(existing[0].roles) : existing[0].roles) : [];
       
       const oldRolesStr = Array.isArray(oldRoles) ? oldRoles.sort().join(',') : '';
-      const newRolesStr = Array.isArray(roles) ? roles.sort().join(',') : '';
+      const newRolesStr = Array.isArray(finalRoles) ? finalRoles.sort().join(',') : '';
 
-      if (oldRolesStr !== newRolesStr) {
+      if (oldRolesStr !== newRolesStr && roles !== undefined) {
         const description = `Roles changed from [${oldRolesStr || 'none'}] to [${newRolesStr || 'none'}]`;
         
         // Insert into audit_logs

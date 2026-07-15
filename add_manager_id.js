@@ -25,6 +25,23 @@ async function migrate() {
     }
   }
 
+  const email = process.argv[2];
+  if (email) {
+    try {
+      const [users] = await pool.query('SELECT uid FROM users WHERE email = ?', [email]);
+      if (users.length > 0) {
+        const uid = users[0].uid;
+        await pool.query('UPDATE factories SET manager_id = ?', [uid]);
+        await pool.query('UPDATE warehouses SET manager_id = ?', [uid]);
+        console.log(`Assigned ${email} (${uid}) as manager to existing factories and warehouses.`);
+      } else {
+        console.log(`User with email ${email} not found.`);
+      }
+    } catch (err) {
+      console.error('Error assigning manager:', err);
+    }
+  }
+
   process.exit(0);
 }
 

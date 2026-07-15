@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Background -->
+  <rect width="400" height="400" fill="#ffffff" />
+
+  <!-- Outer Ring (Earthy Brown) -->
+  <circle cx="200" cy="200" r="160" fill="none" stroke="#5D4037" stroke-width="12" />
+  
+  <!-- Inner Decorative Ring (Golden Yellow) -->
+  <circle cx="200" cy="200" r="145" fill="none" stroke="#FFC107" stroke-width="4" stroke-dasharray="10, 5" />
+
+  <!-- Stylized Wheat Stalk Base -->
+  <path d="M200,280 C160,230 170,150 200,110 C230,150 240,230 200,280 Z" fill="#FFC107" stroke="#5D4037" stroke-width="6" stroke-linejoin="round" />
+  
+  <!-- Wheat Stalk Center Line -->
+  <path d="M200,110 L200,290" stroke="#5D4037" stroke-width="6" stroke-linecap="round" />
+  
+  <!-- Left Grains -->
+  <path d="M200,140 L175,115 M200,170 L175,145 M200,200 L175,175 M200,230 L175,205 M200,260 L175,235" stroke="#5D4037" stroke-width="6" stroke-linecap="round" />
+  
+  <!-- Right Grains -->
+  <path d="M200,140 L225,115 M200,170 L225,145 M200,200 L225,175 M200,230 L225,205 M200,260 L225,235" stroke="#5D4037" stroke-width="6" stroke-linecap="round" />
+
+  <!-- Curved Text Path for Brand Name -->
+  <path id="text-path" d="M 80,210 A 120,120 0 0,1 320,210" fill="none" />
+  
+  <!-- Brand Name Typography -->
+  <text font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="36" fill="#5D4037" letter-spacing="2">
+    <textPath href="#text-path" startOffset="50%" text-anchor="middle">MILKI FLOUR</textPath>
+  </text>
+
+  <!-- 20 KG Weight Badge (High Contrast Red) -->
+  <rect x="125" y="305" width="150" height="56" rx="8" fill="#D32F2F" stroke="#ffffff" stroke-width="4" />
+  <text x="200" y="345" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="32" fill="#ffffff" text-anchor="middle" letter-spacing="1">20 KG</text>
+  
+  <!-- Est. Text -->
+  <text x="200" y="295" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="12" fill="#5D4037" text-anchor="middle">PREMIUM QUALITY</text>
+</svg>

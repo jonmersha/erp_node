@@ -22,7 +22,7 @@ export const getAttendance = async (req, res) => {
 // Clock in / Add manual attendance
 export const logAttendance = async (req, res) => {
   const { company_id } = req.user;
-  const { employee_id, date, clock_in, clock_out, status } = req.body;
+  const { employee_id, date, clock_in, clock_out, status, overtime_hours } = req.body;
   const id = uuidv4();
 
   try {
@@ -33,15 +33,15 @@ export const logAttendance = async (req, res) => {
       // Update
       const attId = existing[0].id;
       await pool.query(
-        'UPDATE attendance SET clock_in = COALESCE(?, clock_in), clock_out = COALESCE(?, clock_out), status = COALESCE(?, status) WHERE id = ?',
-        [clock_in, clock_out, status, attId]
+        'UPDATE attendance SET clock_in = COALESCE(?, clock_in), clock_out = COALESCE(?, clock_out), status = COALESCE(?, status), overtime_hours = COALESCE(?, overtime_hours) WHERE id = ?',
+        [clock_in, clock_out, status, overtime_hours, attId]
       );
       res.json({ id: attId, message: 'Attendance updated' });
     } else {
       // Create
       await pool.query(
-        'INSERT INTO attendance (id, employee_id, date, clock_in, clock_out, status, company_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [id, employee_id, date, clock_in || null, clock_out || null, status || 'present', company_id]
+        'INSERT INTO attendance (id, employee_id, date, clock_in, clock_out, status, overtime_hours, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [id, employee_id, date, clock_in || null, clock_out || null, status || 'present', overtime_hours || 0, company_id]
       );
       res.status(201).json({ id, message: 'Attendance logged' });
     }
