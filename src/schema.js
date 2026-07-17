@@ -805,6 +805,48 @@ CREATE TABLE IF NOT EXISTS \`fleet_consumptions\` (
       ) ENGINE=InnoDB;
     `).catch(console.error);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS rfqs (
+          id CHAR(36) PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          description TEXT,
+          status ENUM('draft', 'published', 'closed', 'awarded') DEFAULT 'draft',
+          deadline DATETIME,
+          company_id CHAR(36) NOT NULL,
+          created_by VARCHAR(36),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_rfq_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS rfq_items (
+          id CHAR(36) PRIMARY KEY,
+          rfq_id CHAR(36) NOT NULL,
+          raw_material_id CHAR(36) NOT NULL,
+          quantity DECIMAL(12, 2) NOT NULL,
+          company_id CHAR(36) NOT NULL,
+          CONSTRAINT fk_rfq_items_rfq FOREIGN KEY (rfq_id) REFERENCES rfqs(id) ON DELETE CASCADE,
+          CONSTRAINT fk_rfq_items_material FOREIGN KEY (raw_material_id) REFERENCES raw_materials(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bids (
+          id CHAR(36) PRIMARY KEY,
+          rfq_id CHAR(36) NOT NULL,
+          supplier_id CHAR(36) NOT NULL,
+          total_amount DECIMAL(15, 2) NOT NULL,
+          delivery_time_days INT,
+          status ENUM('submitted', 'under_review', 'accepted', 'rejected') DEFAULT 'submitted',
+          notes TEXT,
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_bids_rfq FOREIGN KEY (rfq_id) REFERENCES rfqs(id) ON DELETE CASCADE,
+          CONSTRAINT fk_bids_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
     console.log('Database schema initialization completed.');
 
     try {

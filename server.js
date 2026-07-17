@@ -41,6 +41,7 @@ import reportsRoutes from './src/routes/reports.routes.js';
 import backupRoutes from './src/routes/backup.routes.js';
 import expenseRoutes from './src/routes/expense.routes.js';
 import fleetRoutes from './src/routes/fleet.routes.js';
+import sourcingRoutes from './src/routes/sourcing.routes.js';
 import pool from './src/db.js';
 import multer from 'multer';
 import path from 'path';
@@ -139,6 +140,7 @@ apiRouter.use('/productionRuns', productionRoutes);
 apiRouter.use('/productionPlans', productionPlanRoutes);
 apiRouter.use('/procurementPlans', procurementPlanRoutes);
 apiRouter.use('/recipes', recipeRoutes);
+apiRouter.use('/sourcing', sourcingRoutes);
 apiRouter.use('/quality', qualityRoutes);
 apiRouter.use('/workflowTemplates', workflowRoutes);
 
