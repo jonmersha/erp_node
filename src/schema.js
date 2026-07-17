@@ -63,6 +63,11 @@ export const initDb = async () => {
           certificate_url VARCHAR(500),
           is_authorized BOOLEAN DEFAULT FALSE,
           status ENUM('pending_approval', 'active', 'inactive') DEFAULT 'pending_approval',
+          category VARCHAR(100),
+          risk_rating INT DEFAULT 3,
+          payment_terms VARCHAR(100),
+          bank_account VARCHAR(255),
+          tax_id VARCHAR(100),
           created_by VARCHAR(36),
           approved_by VARCHAR(36),
           CONSTRAINT fk_supplier_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
@@ -460,6 +465,107 @@ export const initDb = async () => {
     `);
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`maintenance_logs\` (
+  \`id\` char(36) PRIMARY KEY,
+  \`factory_id\` char(36),
+  \`machine_id\` varchar(50) NOT NULL,
+  \`type\` enum('preventive', 'corrective', 'breakdown') NOT NULL,
+  \`description\` text NOT NULL,
+  \`cost\` decimal(10,2) DEFAULT 0,
+  \`date\` datetime NOT NULL,
+  \`performed_by\` varchar(100),
+  \`company_id\` char(36) NOT NULL,
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (\`company_id\`) REFERENCES \`companies\`(\`id\`) ON DELETE CASCADE,
+  FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\`(\`id\`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS \`cost_centers\` (
+  \`id\` char(36) PRIMARY KEY,
+  \`name\` varchar(100) NOT NULL,
+  \`code\` varchar(50) NOT NULL,
+  \`description\` text,
+  \`manager_id\` char(36),
+  \`company_id\` char(36) NOT NULL,
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (\`company_id\`) REFERENCES \`companies\`(\`id\`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS \`budgets\` (
+  \`id\` char(36) PRIMARY KEY,
+  \`cost_center_id\` char(36) NOT NULL,
+  \`fiscal_year\` int NOT NULL,
+  \`total_amount\` decimal(15,2) NOT NULL,
+  \`company_id\` char(36) NOT NULL,
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (\`cost_center_id\`) REFERENCES \`cost_centers\`(\`id\`) ON DELETE CASCADE,
+  FOREIGN KEY (\`company_id\`) REFERENCES \`companies\`(\`id\`) ON DELETE CASCADE,
+  UNIQUE KEY \`unique_budget_year\` (\`cost_center_id\`, \`fiscal_year\`)
+);
+
+CREATE TABLE IF NOT EXISTS \`expenses\` (
+  \`id\` char(36) PRIMARY KEY,
+  \`cost_center_id\` char(36) NOT NULL,
+  \`amount\` decimal(15,2) NOT NULL,
+  \`date\` datetime NOT NULL,
+  \`description\` text,
+  \`category\` varchar(100) NOT NULL,
+  \`status\` enum('pending', 'approved', 'rejected', 'paid') DEFAULT 'pending',
+  \`company_id\` char(36) NOT NULL,
+  \`created_by\` varchar(36) NOT NULL,
+  \`approved_by\` varchar(36),
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (\`cost_center_id\`) REFERENCES \`cost_centers\`(\`id\`) ON DELETE CASCADE,
+  FOREIGN KEY (\`company_id\`) REFERENCES \`companies\`(\`id\`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS \`vehicles\` (
+  \`id\` char(36) PRIMARY KEY,
+  \`plate_number\` varchar(50) NOT NULL,
+  \`make\` varchar(50) NOT NULL,
+  \`model\` varchar(50) NOT NULL,
+  \`type\` enum('car', 'truck', 'van', 'motorcycle') NOT NULL,
+  \`status\` enum('active', 'maintenance', 'out_of_service') DEFAULT 'active',
+  \`company_id\` char(36) NOT NULL,
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (\`company_id\`) REFERENCES \`companies\`(\`id\`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS \`vehicle_requests\` (
+  \`id\` char(36) PRIMARY KEY,
+  \`employee_id\` char(36) NOT NULL,
+  \`travelers\` JSON,
+  \`vehicle_id\` char(36),
+  \`start_date\` datetime NOT NULL,
+  \`end_date\` datetime NOT NULL,
+  \`purpose\` text NOT NULL,
+  \`cost_center_id\` char(36),
+  \`status\` enum('pending_approval', 'approved', 'rejected', 'completed') DEFAULT 'pending_approval',
+  \`company_id\` char(36) NOT NULL,
+  \`created_by\` varchar(36) NOT NULL,
+  \`approved_by\` varchar(36),
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (\`company_id\`) REFERENCES \`companies\`(\`id\`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS \`fleet_consumptions\` (
+  \`id\` char(36) PRIMARY KEY,
+  \`vehicle_id\` char(36) NOT NULL,
+  \`type\` enum('fuel', 'maintenance', 'repair', 'toll') NOT NULL,
+  \`cost\` decimal(15,2) NOT NULL,
+  \`date\` datetime NOT NULL,
+  \`description\` text,
+  \`cost_center_id\` char(36),
+  \`company_id\` char(36) NOT NULL,
+  \`recorded_by\` varchar(36) NOT NULL,
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (\`vehicle_id\`) REFERENCES \`vehicles\`(\`id\`) ON DELETE CASCADE,
+  FOREIGN KEY (\`company_id\`) REFERENCES \`companies\`(\`id\`) ON DELETE CASCADE
+);
+
+`);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS production_events (
           id CHAR(36) PRIMARY KEY,
           run_id CHAR(36) NOT NULL,
@@ -506,7 +612,7 @@ export const initDb = async () => {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           CONSTRAINT fk_milling_run FOREIGN KEY (run_id) REFERENCES production_runs(id) ON DELETE CASCADE,
-          CONSTRAINT fk_milling_operator FOREIGN KEY (shift_operator_id) REFERENCES users(id) ON DELETE SET NULL,
+          CONSTRAINT fk_milling_operator FOREIGN KEY (shift_operator_id) REFERENCES users(uid) ON DELETE SET NULL,
           CONSTRAINT fk_milling_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
@@ -591,6 +697,111 @@ export const initDb = async () => {
           company_id CHAR(36) NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT fk_inv_tx_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+    // 7. SCM Phase 2 & Enterprise Tables
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS purchase_requisitions (
+          id CHAR(36) PRIMARY KEY,
+          department_id CHAR(36) NOT NULL,
+          item_id CHAR(36) NOT NULL,
+          item_name VARCHAR(255) NOT NULL,
+          quantity DECIMAL(12, 2) NOT NULL,
+          required_date DATE NOT NULL,
+          status ENUM('draft', 'pending_approval', 'approved', 'rejected', 'converted_to_po') DEFAULT 'pending_approval',
+          budget_code VARCHAR(100),
+          notes TEXT,
+          created_by VARCHAR(36),
+          approved_by VARCHAR(36),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          CONSTRAINT fk_pr_dept FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE,
+          CONSTRAINT fk_pr_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS warehouse_locations (
+          id CHAR(36) PRIMARY KEY,
+          warehouse_id CHAR(36) NOT NULL,
+          zone VARCHAR(50),
+          aisle VARCHAR(50),
+          rack VARCHAR(50),
+          shelf VARCHAR(50),
+          bin VARCHAR(50),
+          barcode VARCHAR(100),
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_loc_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE,
+          CONSTRAINT fk_loc_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS inventory_lots (
+          id CHAR(36) PRIMARY KEY,
+          item_id CHAR(36) NOT NULL,
+          lot_number VARCHAR(100) NOT NULL,
+          batch_number VARCHAR(100),
+          manufacture_date DATE,
+          expiry_date DATE,
+          farm_origin VARCHAR(255),
+          status ENUM('Available', 'Quarantine', 'Blocked') DEFAULT 'Quarantine',
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_lot_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS weighbridge_logs (
+          id CHAR(36) PRIMARY KEY,
+          reference_type ENUM('PO', 'SO', 'Transfer', 'Other') NOT NULL,
+          reference_id CHAR(36),
+          truck_plate VARCHAR(50) NOT NULL,
+          driver_name VARCHAR(100),
+          gross_weight DECIMAL(10,2),
+          tare_weight DECIMAL(10,2),
+          net_weight DECIMAL(10,2),
+          entry_time DATETIME NOT NULL,
+          exit_time DATETIME,
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_wb_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS quality_inspections (
+          id CHAR(36) PRIMARY KEY,
+          weighbridge_log_id CHAR(36) NOT NULL,
+          moisture DECIMAL(5,2),
+          protein DECIMAL(5,2),
+          ash DECIMAL(5,2),
+          gluten DECIMAL(5,2),
+          status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+          inspector_id CHAR(36),
+          notes TEXT,
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_qi_wb FOREIGN KEY (weighbridge_log_id) REFERENCES weighbridge_logs(id) ON DELETE CASCADE,
+          CONSTRAINT fk_qi_inspector FOREIGN KEY (inspector_id) REFERENCES users(uid) ON DELETE SET NULL,
+          CONSTRAINT fk_qi_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `).catch(console.error);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS gate_passes (
+          id CHAR(36) PRIMARY KEY,
+          delivery_note_id CHAR(36) NOT NULL,
+          qr_code VARCHAR(255) NOT NULL,
+          security_verified_at DATETIME,
+          status ENUM('Issued', 'Verified', 'Expired', 'Cancelled') DEFAULT 'Issued',
+          company_id CHAR(36) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_gp_dn FOREIGN KEY (delivery_note_id) REFERENCES delivery_notes(id) ON DELETE CASCADE,
+          CONSTRAINT fk_gp_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `).catch(console.error);
 

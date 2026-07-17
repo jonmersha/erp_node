@@ -20,6 +20,9 @@ import roleRoutes from './src/routes/role.routes.js';
 import factoryRoutes from './src/routes/factory.routes.js';
 import supplierRoutes from './src/routes/supplier.routes.js';
 import purchaseOrderRoutes from './src/routes/purchaseOrder.routes.js';
+import purchaseRequisitionRoutes from './src/routes/purchaseRequisition.routes.js';
+import weighbridgeRoutes from './src/routes/weighbridge.routes.js';
+import qualityInspectionRoutes from './src/routes/qualityInspection.routes.js';
 import rawMaterialRoutes from './src/routes/rawMaterial.routes.js';
 import salesOrderRoutes from './src/routes/salesOrder.routes.js';
 import productionRoutes from './src/routes/production.routes.js';
@@ -34,6 +37,10 @@ import financeRoutes from './src/routes/finance.routes.js';
 import financialPlanRoutes from './src/routes/financialPlan.routes.js';
 import crmRoutes from './src/routes/crm.routes.js';
 import workflowRoutes from './src/routes/workflow.routes.js';
+import reportsRoutes from './src/routes/reports.routes.js';
+import backupRoutes from './src/routes/backup.routes.js';
+import expenseRoutes from './src/routes/expense.routes.js';
+import fleetRoutes from './src/routes/fleet.routes.js';
 import pool from './src/db.js';
 import multer from 'multer';
 import path from 'path';
@@ -116,6 +123,11 @@ apiRouter.use('/production', productionGroupRoutes);
 apiRouter.use('/inventory', inventoryRoutes);
 
 // Direct / Legacy aliases for fetchCollection compatibility
+apiRouter.use('/reports', reportsRoutes);
+apiRouter.use('/companies', companyRoutes);
+apiRouter.use('/purchaseRequisitions', purchaseRequisitionRoutes);
+apiRouter.use('/weighbridge', weighbridgeRoutes);
+apiRouter.use('/qualityInspections', qualityInspectionRoutes);
 apiRouter.use('/suppliers', supplierRoutes);
 apiRouter.use('/purchaseOrders', purchaseOrderRoutes);
 apiRouter.use('/rawMaterials', rawMaterialRoutes);
@@ -137,6 +149,10 @@ apiRouter.use('/logistics', logisticsRoutes);
 apiRouter.use('/finance', financeRoutes);
 apiRouter.use('/plans/financial', financialPlanRoutes);
 apiRouter.use('/crm', crmRoutes);
+apiRouter.use('/reports', reportsRoutes);
+apiRouter.use('/backup', backupRoutes);
+apiRouter.use('/expenses', expenseRoutes);
+apiRouter.use('/fleet', fleetRoutes);
 
 // Mount apiRouter on /api
 app.use('/api', apiRouter);

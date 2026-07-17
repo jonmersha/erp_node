@@ -1,6 +1,59 @@
 import pool from '../db.js';
 import crypto from 'node:crypto';
 
+const deductMaterialsForRun = async (connection, runId, recipeId, quantityPlanned, companyId, userId) => {
+  if (!recipeId) return;
+  
+  // Check if already deducted
+  const [existingTx] = await connection.query(
+    "SELECT id FROM inventory_transactions WHERE reference_id = ? AND reference_type = 'production_run_start'",
+    [runId]
+  );
+  if (existingTx.length > 0) return; // Already deducted
+
+  // Get Recipe BOM
+  const [recipeRows] = await connection.query('SELECT bom FROM recipes WHERE id = ?', [recipeId]);
+  if (recipeRows.length === 0) return;
+  const recipe = recipeRows[0];
+  let bom = [];
+  try {
+    bom = typeof recipe.bom === 'string' ? JSON.parse(recipe.bom) : recipe.bom;
+  } catch(e) {}
+  
+  if (!Array.isArray(bom) || bom.length === 0) return;
+
+  // Deduct each item
+  for (const item of bom) {
+    const requiredQty = (parseFloat(item.quantity) || 0) * (parseFloat(quantityPlanned) || 0);
+    if (requiredQty <= 0) continue;
+
+    const [invRows] = await connection.query(
+      "SELECT * FROM inventory WHERE item_id = ? AND company_id = ? ORDER BY quantity DESC",
+      [item.itemId, companyId]
+    );
+
+    let remainingToDeduct = requiredQty;
+    for (const inv of invRows) {
+      if (remainingToDeduct <= 0) break;
+      const deductAmt = Math.min(inv.quantity, remainingToDeduct);
+      
+      await connection.query("UPDATE inventory SET quantity = quantity - ? WHERE id = ?", [deductAmt, inv.id]);
+      
+      const txId = crypto.randomUUID();
+      await connection.query(
+        "INSERT INTO inventory_transactions (id, inventory_id, item_id, transaction_type, quantity, reference_id, reference_type, notes, user_id, company_id) VALUES (?, ?, ?, 'out', ?, ?, 'production_run_start', 'Raw materials consumed for production run', ?, ?)",
+        [txId, inv.id, item.itemId, deductAmt, runId, userId || null, companyId]
+      );
+      
+      remainingToDeduct -= deductAmt;
+    }
+    
+    if (remainingToDeduct > 0) {
+      throw new Error(`Insufficient stock for item ${item.itemId}. Missing ${remainingToDeduct}`);
+    }
+  }
+};
+
 export const getAllProductionRuns = async (req, res) => {
   try {
     const { companyId } = req.query;
@@ -12,19 +65,58 @@ export const getAllProductionRuns = async (req, res) => {
     }
     const [rows] = await pool.query(query, params);
     
+    let stagesRows = [];
+    if (companyId) {
+      [stagesRows] = await pool.query('SELECT run_id, percentage_weight, quantity_produced, status FROM production_run_stages WHERE company_id = ?', [companyId]);
+    } else {
+      [stagesRows] = await pool.query('SELECT run_id, percentage_weight, quantity_produced, status FROM production_run_stages');
+    }
+
+    const stagesByRun = stagesRows.reduce((acc, stage) => {
+      if (!acc[stage.run_id]) acc[stage.run_id] = [];
+      acc[stage.run_id].push(stage);
+      return acc;
+    }, {});
+
     // map snake_case to camelCase
-    const mappedRows = rows.map(row => ({
-      ...row,
-      companyId: row.company_id,
-      factoryId: row.factory_id,
-      productId: row.product_id,
-      recipeId: row.recipe_id,
-      quantityPlanned: typeof row.quantity_planned === 'string' ? parseFloat(row.quantity_planned) : row.quantity_planned,
-      quantityProduced: typeof row.quantity_produced === 'string' ? parseFloat(row.quantity_produced) : row.quantity_produced,
-      quantity: typeof row.quantity_planned === 'string' ? parseFloat(row.quantity_planned) : row.quantity_planned,
-      startDate: row.start_date,
-      createdAt: row.created_at
-    }));
+    const mappedRows = rows.map(row => {
+      const quantityPlanned = typeof row.quantity_planned === 'string' ? parseFloat(row.quantity_planned) : row.quantity_planned;
+      const quantityProduced = typeof row.quantity_produced === 'string' ? parseFloat(row.quantity_produced) : row.quantity_produced;
+      const runStages = stagesByRun[row.id] || [];
+      
+      let calculatedProgress = 0;
+      let currentStageName = null;
+      if (runStages.length > 0) {
+        calculatedProgress = runStages.reduce((sum, stage) => {
+          if (stage.status === 'completed' && stage.quantity_produced !== null && stage.percentage_weight !== null) {
+            const weight = parseFloat(stage.percentage_weight) || 0;
+            const units = parseFloat(stage.quantity_produced) || 0;
+            return sum + (weight * (units / quantityPlanned));
+          }
+          return sum;
+        }, 0);
+        const activeStage = runStages.find(s => s.status !== 'completed');
+        currentStageName = activeStage ? activeStage.stage_name : 'All Stages Completed';
+      } else {
+        calculatedProgress = quantityPlanned > 0 ? (quantityProduced / quantityPlanned) * 100 : 0;
+      }
+
+      return {
+        ...row,
+        companyId: row.company_id,
+        factoryId: row.factory_id,
+        productId: row.product_id,
+        recipeId: row.recipe_id,
+        quantityPlanned: quantityPlanned,
+        quantityProduced: quantityProduced,
+        quantity: quantityPlanned,
+        calculatedProgress: Math.min(calculatedProgress, 100),
+        currentStageName: currentStageName,
+        workflowTemplateId: row.workflow_template_id,
+        startDate: row.start_date,
+        createdAt: row.created_at
+      };
+    });
     res.json(mappedRows);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch production runs' });
@@ -114,6 +206,10 @@ export const createProductionRun = async (req, res) => {
       }
     }
 
+    if (status === 'in_progress') {
+      await deductMaterialsForRun(connection, runId, recipeId || recipe_id, finalQuantityPlanned, finalCompanyId, req.user?.uid || null);
+    }
+
     await connection.commit();
     res.status(201).json({ id: runId });
   } catch (error) {
@@ -126,7 +222,9 @@ export const createProductionRun = async (req, res) => {
 };
 
 export const updateProductionRun = async (req, res) => {
+  const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
     const { id } = req.params;
     const { 
       factoryId, factory_id, 
@@ -139,32 +237,46 @@ export const updateProductionRun = async (req, res) => {
     } = req.body;
     
     // First, fetch the existing record to handle partial updates
-    const [existing] = await pool.query('SELECT * FROM production_runs WHERE id = ?', [id]);
+    const [existing] = await connection.query('SELECT * FROM production_runs WHERE id = ?', [id]);
     if (existing.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: 'Production run not found' });
     }
     const current = existing[0];
     
     const finalStartDate = startDate || start_date || current.start_date;
     const formattedStartDate = finalStartDate ? new Date(finalStartDate).toISOString().slice(0, 19).replace('T', ' ') : null;
+    
+    const newStatus = status === 'planned' ? 'scheduled' : (status || current.status);
+    const finalRecipeId = recipeId || recipe_id || current.recipe_id;
+    const finalQuantityPlanned = quantityPlanned !== undefined ? quantityPlanned : (quantity_planned !== undefined ? quantity_planned : current.quantity_planned);
 
-    await pool.query(
+    await connection.query(
       'UPDATE production_runs SET factory_id = ?, product_id = ?, recipe_id = ?, quantity_planned = ?, quantity_produced = ?, status = ?, start_date = ? WHERE id = ?',
       [
         factoryId || factory_id || current.factory_id, 
         productId || product_id || current.product_id, 
-        recipeId || recipe_id || current.recipe_id, 
-        quantityPlanned !== undefined ? quantityPlanned : (quantity_planned !== undefined ? quantity_planned : current.quantity_planned), 
+        finalRecipeId, 
+        finalQuantityPlanned, 
         quantityProduced !== undefined ? quantityProduced : (quantity_produced !== undefined ? quantity_produced : current.quantity_produced), 
-        status === 'planned' ? 'scheduled' : (status || current.status), 
+        newStatus, 
         formattedStartDate, 
         id
       ]
     );
+
+    if ((current.status === 'scheduled' || current.status === 'planned') && newStatus === 'in_progress') {
+      await deductMaterialsForRun(connection, id, finalRecipeId, finalQuantityPlanned, current.company_id, req.user?.uid || null);
+    }
+
+    await connection.commit();
     res.json({ message: 'Production run updated' });
   } catch (error) {
+    await connection.rollback();
     console.error('Error updating production run:', error);
     res.status(500).json({ error: 'Failed to update production run', details: error.message });
+  } finally {
+    connection.release();
   }
 };
 

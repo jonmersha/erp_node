@@ -6,7 +6,7 @@ export const getLeaves = async (req, res) => {
   const { company_id } = req.user;
   try {
     const [rows] = await pool.query(`
-      SELECT l.*, e.name as employeeName, e.role as employeeRole, a.name as approverName
+      SELECT l.*, e.name as employeeName, e.email as employeeEmail, e.role as employeeRole, a.name as approverName
       FROM leave_requests l
       JOIN employees e ON l.employee_id = e.id
       LEFT JOIN employees a ON l.approved_by = a.id
@@ -49,6 +49,11 @@ export const updateLeaveStatus = async (req, res) => {
     // Let's try to map the uid to an employee ID if possible, otherwise just leave it null for now.
     const [empRows] = await pool.query('SELECT id FROM employees WHERE email = (SELECT email FROM users WHERE uid = ?)', [uid]);
     const approverId = empRows.length > 0 ? empRows[0].id : null;
+
+    const [leaveRows] = await pool.query('SELECT employee_id FROM leave_requests WHERE id = ?', [id]);
+    if (leaveRows.length > 0 && leaveRows[0].employee_id === approverId) {
+      return res.status(403).json({ error: 'Maker cannot be the checker. You cannot approve your own leave request.' });
+    }
 
     await pool.query(
       'UPDATE leave_requests SET status = ?, approved_by = ? WHERE id = ? AND company_id = ?',

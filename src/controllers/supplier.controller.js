@@ -19,7 +19,7 @@ export const getAllSuppliers = async (req, res) => {
 
 export const createSupplier = async (req, res) => {
   try {
-    const { id, name, contact, email, company_id, companyId, certificate_url, is_authorized, status, createdBy } = req.body;
+    const { id, name, contact, email, company_id, companyId, certificate_url, is_authorized, status, createdBy, category, risk_rating, payment_terms, bank_account, tax_id } = req.body;
     console.log('Attempting to create supplier:', { name, companyId: company_id || companyId });
     
     const finalCompanyId = company_id || companyId;
@@ -30,8 +30,8 @@ export const createSupplier = async (req, res) => {
 
     const supplierId = id || crypto.randomUUID();
     const [result] = await pool.query(
-      'INSERT INTO suppliers (id, name, contact, email, company_id, certificate_url, is_authorized, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [supplierId, name, contact, email, finalCompanyId, certificate_url || null, is_authorized ? 1 : 0, status || 'pending_approval', createdBy || null]
+      'INSERT INTO suppliers (id, name, contact, email, company_id, certificate_url, is_authorized, status, created_by, category, risk_rating, payment_terms, bank_account, tax_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [supplierId, name, contact, email, finalCompanyId, certificate_url || null, is_authorized ? 1 : 0, status || 'pending_approval', createdBy || null, category || null, risk_rating || 3, payment_terms || null, bank_account || null, tax_id || null]
     );
     console.log('Supplier created successfully:', supplierId);
     res.status(201).json({ id: supplierId });
@@ -44,10 +44,10 @@ export const createSupplier = async (req, res) => {
 export const updateSupplier = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, contact, email, certificate_url, is_authorized, status } = req.body;
+    const { name, contact, email, certificate_url, is_authorized, status, category, risk_rating, payment_terms, bank_account, tax_id } = req.body;
     await pool.query(
-      'UPDATE suppliers SET name = ?, contact = ?, email = ?, certificate_url = ?, is_authorized = ?, status = ? WHERE id = ?',
-      [name, contact, email, certificate_url || null, is_authorized ? 1 : 0, status || 'inactive', id]
+      'UPDATE suppliers SET name = ?, contact = ?, email = ?, certificate_url = ?, is_authorized = ?, status = ?, category = ?, risk_rating = ?, payment_terms = ?, bank_account = ?, tax_id = ? WHERE id = ?',
+      [name, contact, email, certificate_url || null, is_authorized ? 1 : 0, status || 'inactive', category || null, risk_rating || 3, payment_terms || null, bank_account || null, tax_id || null, id]
     );
     res.json({ message: 'Supplier updated' });
   } catch (error) {
