@@ -1,8 +1,12 @@
 import { Router } from 'express';
-import { getAllEmployees, createEmployee, updateEmployee, deleteEmployee } from '../controllers/employee.controller.js';
+import multer from 'multer';
+import { getAllEmployees, createEmployee, updateEmployee, deleteEmployee, downloadTemplate, uploadEmployees } from '../controllers/employee.controller.js';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
+router.get('/template', downloadTemplate);
+router.post('/upload', upload.single('file'), uploadEmployees);
 router.get('/', getAllEmployees);
 router.post('/', createEmployee);
 router.put('/:id', updateEmployee);

@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { parse } from 'csv-parse/sync';
+import { stringify } from 'csv-stringify/sync';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -103,5 +105,81 @@ export const deleteProduct = async (req, res) => {
     res.json({ message: 'Product deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+};
+
+export const downloadTemplate = (req, res) => {
+  try {
+    const columns = ['Name', 'Category Name', 'Package Size', 'Unit', 'Price'];
+    const csvData = stringify([columns]);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=products_template.csv');
+    res.status(200).send(csvData);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate template' });
+  }
+};
+
+export const uploadProducts = async (req, res) => {
+  try {
+    const { companyId } = req.body;
+    if (!companyId) return res.status(400).json({ error: 'Company ID is required' });
+    if (!req.file) return res.status(400).json({ error: 'No CSV file uploaded' });
+
+    const fileContent = req.file.buffer.toString('utf-8');
+    const records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true
+    });
+
+    if (records.length === 0) {
+      return res.status(400).json({ error: 'CSV file is empty' });
+    }
+
+    // Process rows
+    let insertedCount = 0;
+    
+    // Fetch existing categories to resolve by name
+    const [categories] = await pool.query('SELECT id, name FROM categories WHERE company_id = ?', [companyId]);
+    const categoryMap = {}; // name (lower) -> id
+    categories.forEach(c => {
+      categoryMap[c.name.toLowerCase()] = c.id;
+    });
+
+    for (const row of records) {
+      const name = row['Name'];
+      const catName = row['Category Name'];
+      const packageSize = row['Package Size'];
+      const unit = row['Unit'];
+      const price = parseFloat(row['Price'] || '0');
+
+      if (!name || !catName || !packageSize || !unit) {
+        continue; // Skip invalid rows
+      }
+
+      let categoryId = categoryMap[catName.toLowerCase()];
+      if (!categoryId) {
+        // Auto-create category
+        categoryId = crypto.randomUUID();
+        await pool.query(
+          'INSERT INTO categories (id, name, company_id) VALUES (?, ?, ?)',
+          [categoryId, catName, companyId]
+        );
+        categoryMap[catName.toLowerCase()] = categoryId; // cache it
+      }
+
+      const productId = crypto.randomUUID();
+      await pool.query(
+        'INSERT INTO products (id, name, category_id, package_size, unit, price, company_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [productId, name, categoryId, packageSize, unit, price, companyId]
+      );
+      insertedCount++;
+    }
+
+    res.status(200).json({ message: `Successfully uploaded ${insertedCount} products.` });
+  } catch (error) {
+    console.error('CSV upload error:', error);
+    res.status(500).json({ error: 'Failed to process CSV file', details: error.message });
   }
 };

@@ -1,5 +1,7 @@
 import pool from '../db.js';
 import crypto from 'node:crypto';
+import { parse } from 'csv-parse/sync';
+import { stringify } from 'csv-stringify/sync';
 
 export const getAllRawMaterials = async (req, res) => {
   try {
@@ -60,5 +62,59 @@ export const deleteRawMaterial = async (req, res) => {
     res.json({ message: 'Raw material deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete raw material' });
+  }
+};
+
+export const downloadTemplate = (req, res) => {
+  try {
+    const columns = ['Name', 'Unit'];
+    const csvData = stringify([columns]);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=raw_materials_template.csv');
+    res.status(200).send(csvData);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate template' });
+  }
+};
+
+export const uploadRawMaterials = async (req, res) => {
+  try {
+    const { companyId } = req.body;
+    if (!companyId) return res.status(400).json({ error: 'Company ID is required' });
+    if (!req.file) return res.status(400).json({ error: 'No CSV file uploaded' });
+
+    const fileContent = req.file.buffer.toString('utf-8');
+    const records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true
+    });
+
+    if (records.length === 0) {
+      return res.status(400).json({ error: 'CSV file is empty' });
+    }
+
+    let insertedCount = 0;
+
+    for (const row of records) {
+      const name = row['Name'];
+      const unit = row['Unit'];
+
+      if (!name || !unit) {
+        continue;
+      }
+
+      const materialId = crypto.randomUUID();
+      await pool.query(
+        'INSERT INTO raw_materials (id, name, unit, company_id) VALUES (?, ?, ?, ?)',
+        [materialId, name, unit, companyId]
+      );
+      insertedCount++;
+    }
+
+    res.status(200).json({ message: `Successfully uploaded ${insertedCount} raw materials.` });
+  } catch (error) {
+    console.error('CSV upload error:', error);
+    res.status(500).json({ error: 'Failed to process CSV file', details: error.message });
   }
 };
