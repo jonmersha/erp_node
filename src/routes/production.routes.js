@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { 
   getAllProductionRuns, 
   createProductionRun, 
@@ -8,11 +9,17 @@ import {
   logProductionEvent, 
   logPackagingSensor,
   getProductionStages,
-  updateProductionStage
+  updateProductionStage,
+  downloadTemplate,
+  uploadProductionRuns
 } from '../controllers/production.controller.js';
 import { getAllProductionPlans, createProductionPlan, updateProductionPlan, deleteProductionPlan, approveProductionPlan } from '../controllers/productionPlan.controller.js';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.get('/template', downloadTemplate);
+router.post('/upload', upload.single('file'), uploadProductionRuns);
 
 router.post('/packaging-sensor', logPackagingSensor);
 

@@ -1,5 +1,7 @@
 import pool from '../db.js';
 import crypto from 'node:crypto';
+import { parse } from 'csv-parse/sync';
+import { stringify } from 'csv-stringify/sync';
 
 const deductMaterialsForRun = async (connection, runId, recipeId, quantityPlanned, companyId, userId) => {
   if (!recipeId) return;
@@ -287,6 +289,89 @@ export const deleteProductionRun = async (req, res) => {
     res.json({ message: 'Production run deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete production run' });
+  }
+};
+
+export const downloadTemplate = (req, res) => {
+  try {
+    const columns = ['Factory Name', 'Product Name', 'Planned Quantity', 'Status'];
+    const csvData = stringify([columns]);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=production_runs_template.csv');
+    res.status(200).send(csvData);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate template' });
+  }
+};
+
+export const uploadProductionRuns = async (req, res) => {
+  try {
+    const companyId = req.user?.company_id || req.body.companyId;
+    if (!companyId) return res.status(400).json({ error: 'Company ID is required' });
+    if (!req.file) return res.status(400).json({ error: 'No CSV file uploaded' });
+
+    const fileContent = req.file.buffer.toString('utf-8');
+    const records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true
+    });
+
+    if (records.length === 0) {
+      return res.status(400).json({ error: 'CSV file is empty' });
+    }
+
+    let insertedCount = 0;
+
+    // Fetch factories
+    const [factories] = await pool.query('SELECT id, name FROM factories WHERE company_id = ?', [companyId]);
+    const factoryMap = {}; 
+    factories.forEach(f => {
+      factoryMap[f.name.toLowerCase()] = f.id;
+    });
+
+    // Fetch products
+    const [products] = await pool.query('SELECT id, name FROM products WHERE company_id = ?', [companyId]);
+    const productMap = {};
+    products.forEach(p => {
+      productMap[p.name.toLowerCase()] = p.id;
+    });
+
+    for (const row of records) {
+      const factName = row['Factory Name'];
+      const prodName = row['Product Name'];
+      const qty = parseFloat(row['Planned Quantity']);
+      let status = row['Status'] ? row['Status'].toLowerCase() : 'scheduled';
+      
+      if (!['scheduled', 'in_progress', 'completed', 'cancelled'].includes(status)) {
+        status = 'scheduled';
+      }
+
+      if (!factName || !prodName || isNaN(qty) || qty <= 0) {
+        continue;
+      }
+
+      // We won't auto-create factories/products here as they are complex entities. 
+      // Just skip if they don't exist.
+      const factoryId = factoryMap[factName.toLowerCase()];
+      const productId = productMap[prodName.toLowerCase()];
+
+      if (!factoryId || !productId) {
+        continue;
+      }
+
+      const id = crypto.randomUUID();
+      await pool.query(
+        'INSERT INTO production_runs (id, factory_id, product_id, quantity_planned, status, company_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [id, factoryId, productId, qty, status, companyId]
+      );
+      insertedCount++;
+    }
+
+    res.status(200).json({ message: `Successfully uploaded ${insertedCount} production runs.` });
+  } catch (error) {
+    console.error('CSV upload error:', error);
+    res.status(500).json({ error: 'Failed to process CSV file', details: error.message });
   }
 };
 
