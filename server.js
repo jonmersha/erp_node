@@ -1,6 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import { authenticateToken } from './src/middleware/auth.js';
+import { errorHandler } from './src/middleware/errorHandler.js';
 import procurementRoutes from './src/services/supply-chain-service/routes/procurement.routes.js';
 import salesRoutes from './src/services/sales-service/routes/sales.routes.js';
 import productionGroupRoutes from './src/services/manufacturing-service/routes/productionGroup.routes.js';
@@ -70,18 +75,30 @@ const upload = multer({ storage: storage });
 
 const app = express();
 
+app.use(helmet());
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 app.use('/api/uploads', express.static(uploadDir));
 
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
+if (process.env.NODE_ENV === 'production') {
+  app.use(morgan('combined'));
+} else {
+  app.use(morgan('dev'));
+}
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 const apiRouter = express.Router();
+
+// Apply rate limiting to all API requests
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+apiRouter.use(apiLimiter);
 
 // Public health check
 app.get('/api/health', async (req, res) => {
@@ -156,18 +173,22 @@ apiRouter.use('/backup', backupRoutes);
 apiRouter.use('/expenses', expenseRoutes);
 apiRouter.use('/fleet', fleetRoutes);
 
+// Catch-all for API 404s
+apiRouter.use((req, res, next) => {
+  const error = new Error('API route not found at backend');
+  error.statusCode = 404;
+  next(error);
+});
+
 // Mount apiRouter on /api
 app.use('/api', apiRouter);
-
-// Catch-all for API 404s
-apiRouter.use((req, res) => {
-  console.log(`API 404 at backend: ${req.method} ${req.url}`);
-  res.status(404).json({ error: 'API route not found at backend' });
-});
 
 app.get('/', (req, res) => {
   res.send('Backend API Server running.');
 });
+
+// Global Error Handler must be the last middleware
+app.use(errorHandler);
 
 import { initDb } from './src/schema.js';
 
