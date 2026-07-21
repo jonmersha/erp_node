@@ -1,4 +1,4 @@
-import pool  from '../../../db.js';
+import pool  from '../../../config/db.config.js';
 import crypto from 'crypto';
 
 export const getAllQualityChecks = async (req, res) => {

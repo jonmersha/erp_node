@@ -1,4 +1,4 @@
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 import crypto from 'node:crypto';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';

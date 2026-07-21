@@ -1,4 +1,4 @@
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 import crypto from 'node:crypto';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
@@ -646,6 +646,100 @@ export const logPackagingSensor = async (req, res) => {
     await connection.rollback();
     console.error('Error in logPackagingSensor:', error);
     res.status(500).json({ error: 'Failed to process sensor data', details: error.message });
+  } finally {
+    connection.release();
+  }
+};
+
+export const getProductionRunConsumption = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 1. Get run details and recipe
+    const [runRows] = await pool.query('SELECT r.*, rc.bom FROM production_runs r LEFT JOIN recipes rc ON r.recipe_id = rc.id WHERE r.id = ?', [id]);
+    if (runRows.length === 0) return res.status(404).json({ error: 'Production run not found' });
+    const run = runRows[0];
+    const quantityPlanned = parseFloat(run.quantity_planned) || 0;
+    
+    let bom = [];
+    try {
+      bom = typeof run.bom === 'string' ? JSON.parse(run.bom) : run.bom;
+    } catch(e) {}
+
+    // 2. Map required quantities
+    const requiredMaterials = (bom || []).map(item => ({
+      itemId: item.itemId,
+      itemName: item.itemName,
+      requiredQty: (parseFloat(item.quantity) || 0) * quantityPlanned,
+      consumedQty: 0
+    }));
+
+    // 3. Get actual consumption from inventory transactions
+    const [txRows] = await pool.query(
+      "SELECT item_id, SUM(quantity) as total_consumed FROM inventory_transactions WHERE reference_id = ? AND reference_type IN ('production_run_start', 'production_run') AND transaction_type = 'out' GROUP BY item_id",
+      [id]
+    );
+
+    // Merge actuals
+    txRows.forEach(tx => {
+      const reqMat = requiredMaterials.find(m => m.itemId === tx.item_id);
+      if (reqMat) {
+        reqMat.consumedQty = parseFloat(tx.total_consumed) || 0;
+      } else {
+        // Consumed something not in BOM?
+        requiredMaterials.push({
+          itemId: tx.item_id,
+          itemName: 'Extra Material',
+          requiredQty: 0,
+          consumedQty: parseFloat(tx.total_consumed) || 0
+        });
+      }
+    });
+
+    res.json({
+      runId: id,
+      productName: run.product_id, // we don't have product name joined, frontend can fetch if needed
+      consumption: requiredMaterials
+    });
+
+  } catch (error) {
+    console.error('Consumption error:', error);
+    res.status(500).json({ error: 'Failed to fetch consumption data' });
+  }
+};
+
+export const recordManualConsumption = async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const { id } = req.params;
+    const { inventoryId, quantity, notes } = req.body;
+    
+    // 1. Get Inventory item
+    const [invRows] = await connection.query('SELECT * FROM inventory WHERE id = ?', [inventoryId]);
+    if (invRows.length === 0) throw new Error('Inventory batch not found');
+    const inv = invRows[0];
+    
+    if (parseFloat(inv.quantity) < parseFloat(quantity)) {
+      throw new Error(`Insufficient stock in batch. Available: ${inv.quantity}`);
+    }
+
+    // 2. Deduct from inventory
+    await connection.query('UPDATE inventory SET quantity = quantity - ? WHERE id = ?', [quantity, inventoryId]);
+
+    // 3. Record transaction
+    const txId = crypto.randomUUID();
+    await connection.query(
+      "INSERT INTO inventory_transactions (id, inventory_id, item_id, item_type, transaction_type, quantity, reference_id, reference_type, notes, user_id, company_id) VALUES (?, ?, ?, ?, 'out', ?, ?, 'production_run', ?, ?, ?)",
+      [txId, inventoryId, inv.item_id, inv.item_type, quantity, id, notes || 'Manual extra consumption', req.user?.uid || null, inv.company_id]
+    );
+
+    await connection.commit();
+    res.json({ message: 'Consumption recorded successfully' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Manual consumption error:', error);
+    res.status(500).json({ error: error.message || 'Failed to record consumption' });
   } finally {
     connection.release();
   }

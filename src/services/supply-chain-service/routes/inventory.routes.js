@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { getInventory, createInventory, updateInventory, deleteInventory, receivePurchaseOrder, shipSalesOrder, transferProduction } from '../controllers/inventory.controller.js';
+import { getInventory, createInventory, updateInventory, deleteInventory, receivePurchaseOrder, shipSalesOrder, transferProduction, getBatchTraceability } from '../controllers/inventory.controller.js';
 
 const router = Router();
 
 router.get('/', getInventory);
+router.get('/traceability/:batchNumber', getBatchTraceability);
 router.post('/', createInventory);
 router.post('/receive-po', receivePurchaseOrder);
 router.post('/ship-order', shipSalesOrder);

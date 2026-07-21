@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 
 // Get attendance records
 export const getAttendance = async (req, res) => {

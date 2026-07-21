@@ -17,11 +17,10 @@ import categoryRoutes from './src/services/master-data-service/routes/category.r
 import inventoryRoutes from './src/services/supply-chain-service/routes/inventory.routes.js';
 import warehouseRoutes from './src/services/supply-chain-service/routes/warehouse.routes.js';
 import companyRoutes from './src/services/master-data-service/routes/company.routes.js';
+import roleRoutes from './src/services/master-data-service/routes/role.routes.js';
 import departmentRoutes from './src/services/hr-service/routes/department.routes.js';
 import attendanceRoutes from './src/services/hr-service/routes/attendance.routes.js';
 import leaveRoutes from './src/services/hr-service/routes/leave.routes.js';
-import userRoutes from './src/services/master-data-service/routes/user.routes.js';
-import roleRoutes from './src/services/master-data-service/routes/role.routes.js';
 import factoryRoutes from './src/services/master-data-service/routes/factory.routes.js';
 import supplierRoutes from './src/services/supply-chain-service/routes/supplier.routes.js';
 import purchaseOrderRoutes from './src/services/supply-chain-service/routes/purchaseOrder.routes.js';
@@ -30,6 +29,7 @@ import weighbridgeRoutes from './src/services/supply-chain-service/routes/weighb
 import qualityInspectionRoutes from './src/services/quality-maintenance-service/routes/qualityInspection.routes.js';
 import rawMaterialRoutes from './src/services/supply-chain-service/routes/rawMaterial.routes.js';
 import salesOrderRoutes from './src/services/sales-service/routes/salesOrder.routes.js';
+import pricingRoutes from './src/services/sales-service/routes/pricing.routes.js';
 import productionRoutes from './src/services/manufacturing-service/routes/production.routes.js';
 import productionPlanRoutes from './src/services/manufacturing-service/routes/productionPlan.routes.js';
 import procurementPlanRoutes from './src/services/supply-chain-service/routes/procurementPlan.routes.js';
@@ -40,6 +40,7 @@ import maintenanceRoutes from './src/services/quality-maintenance-service/routes
 import logisticsRoutes from './src/services/supply-chain-service/routes/logistics.routes.js';
 import financeRoutes from './src/services/finance-service/routes/finance.routes.js';
 import financialPlanRoutes from './src/services/finance-service/routes/financialPlan.routes.js';
+import assetsRoutes from './src/services/finance-service/routes/assets.routes.js';
 import crmRoutes from './src/services/sales-service/routes/crm.routes.js';
 import workflowRoutes from './src/services/master-data-service/routes/workflow.routes.js';
 import reportsRoutes from './src/services/master-data-service/routes/reports.routes.js';
@@ -47,7 +48,7 @@ import backupRoutes from './src/services/master-data-service/routes/backup.route
 import expenseRoutes from './src/services/finance-service/routes/expense.routes.js';
 import fleetRoutes from './src/services/quality-maintenance-service/routes/fleet.routes.js';
 import sourcingRoutes from './src/services/supply-chain-service/routes/sourcing.routes.js';
-import pool from './src/db.js';
+import pool from './src/config/db.config.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -91,14 +92,17 @@ const PORT = process.env.PORT || 4000;
 
 const apiRouter = express.Router();
 
-// Apply rate limiting to all API requests
+// Apply rate limiting to all API requests (Production only)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
   standardHeaders: true,
   legacyHeaders: false,
 });
-apiRouter.use(apiLimiter);
+
+if (process.env.NODE_ENV === 'production') {
+  apiRouter.use(apiLimiter);
+}
 
 // Public health check
 app.get('/api/health', async (req, res) => {
@@ -122,10 +126,8 @@ apiRouter.post('/upload', upload.single('image'), (req, res) => {
   res.json({ url });
 });
 
-// Mount all routes on apiRouter
 apiRouter.use('/companies', companyRoutes);
-apiRouter.use('/users', userRoutes);
-apiRouter.use('/roles', roleRoutes);
+// Auth Routes moved to auth-service
 apiRouter.use('/factories', factoryRoutes);
 apiRouter.use('/products', productRoutes);
 apiRouter.use('/categories', categoryRoutes);
@@ -133,6 +135,7 @@ apiRouter.use('/employees', employeeRoutes);
 apiRouter.use('/departments', departmentRoutes);
 apiRouter.use('/attendance', attendanceRoutes);
 apiRouter.use('/leaves', leaveRoutes);
+apiRouter.use('/roles', roleRoutes);
 
 // Grouped Modules
 apiRouter.use('/procurement', procurementRoutes);
@@ -150,6 +153,7 @@ apiRouter.use('/suppliers', supplierRoutes);
 apiRouter.use('/purchaseOrders', purchaseOrderRoutes);
 apiRouter.use('/rawMaterials', rawMaterialRoutes);
 apiRouter.use('/salesOrders', salesOrderRoutes);
+apiRouter.use('/pricing', pricingRoutes);
 apiRouter.use('/warehouses', warehouseRoutes);
 apiRouter.use('/outlets', outletRoutes);
 apiRouter.use('/inventoryItems', inventoryRoutes);
@@ -166,6 +170,7 @@ apiRouter.use('/deliveryNotes', deliveryNoteRoutes);
 apiRouter.use('/maintenance', maintenanceRoutes);
 apiRouter.use('/logistics', logisticsRoutes);
 apiRouter.use('/finance', financeRoutes);
+apiRouter.use('/assets', assetsRoutes);
 apiRouter.use('/plans/financial', financialPlanRoutes);
 apiRouter.use('/crm', crmRoutes);
 apiRouter.use('/reports', reportsRoutes);
@@ -190,10 +195,10 @@ app.get('/', (req, res) => {
 // Global Error Handler must be the last middleware
 app.use(errorHandler);
 
-import { initDb } from './src/schema.js';
+import { initDb } from './src/config/db.schema.js';
 
 initDb();
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`[Backend] API running on port ${PORT}`);
 });

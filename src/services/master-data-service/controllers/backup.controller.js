@@ -1,4 +1,4 @@
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 import AdmZip from 'adm-zip';
 import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';

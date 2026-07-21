@@ -1,4 +1,4 @@
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 import crypto from 'node:crypto';
 
 export const getInventory = async (req, res) => {
@@ -268,3 +268,64 @@ export const transferProduction = async (req, res) => {
     connection.release();
   }
 };
+
+export const getBatchTraceability = async (req, res) => {
+  try {
+    const { batchNumber } = req.params;
+    const { companyId } = req.query;
+
+    if (!batchNumber) return res.status(400).json({ error: 'Batch number is required' });
+
+    // 1. Find the inventory items with this batch number
+    const [inventoryItems] = await pool.query(
+      'SELECT i.*, p.name as product_name, m.name as material_name ' +
+      'FROM inventory i ' +
+      'LEFT JOIN products p ON i.item_id = p.id AND i.item_type = "product" ' +
+      'LEFT JOIN raw_materials m ON i.item_id = m.id AND i.item_type = "material" ' +
+      'WHERE i.batch_number = ? AND i.company_id = ?',
+      [batchNumber, companyId]
+    );
+
+    if (inventoryItems.length === 0) {
+      return res.status(404).json({ error: 'Batch not found in inventory' });
+    }
+
+    // Combine all inventory IDs for this batch (might be split across warehouses)
+    const inventoryIds = inventoryItems.map(i => i.id);
+
+    // 2. Find all transactions related to this batch
+    const [transactions] = await pool.query(
+      'SELECT t.*, u.name as user_name ' +
+      'FROM inventory_transactions t ' +
+      'LEFT JOIN users u ON t.user_id = u.uid ' +
+      'WHERE t.inventory_id IN (?) AND t.company_id = ? ' +
+      'ORDER BY t.created_at ASC',
+      [inventoryIds, companyId]
+    );
+
+    res.json({
+      batchDetails: inventoryItems.map(i => ({
+        id: i.id,
+        itemName: i.product_name || i.material_name || i.item_id,
+        itemType: i.item_type,
+        quantity: i.quantity,
+        expiryDate: i.expiry_date
+      })),
+      timeline: transactions.map(t => ({
+        id: t.id,
+        transactionType: t.transaction_type,
+        quantity: t.quantity,
+        referenceType: t.reference_type,
+        referenceId: t.reference_id,
+        notes: t.notes,
+        userName: t.user_name || t.user_id,
+        date: t.created_at
+      }))
+    });
+
+  } catch (error) {
+    console.error('Traceability error:', error);
+    res.status(500).json({ error: 'Failed to fetch traceability data' });
+  }
+};
+

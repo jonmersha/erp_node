@@ -1,4 +1,4 @@
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 import crypto from 'node:crypto';
 import fs from 'fs';
 import path from 'path';

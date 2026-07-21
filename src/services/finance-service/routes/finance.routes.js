@@ -1,8 +1,12 @@
 import express from 'express';
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 import { v4 as uuidv4 } from 'uuid';
+import { getJournalEntries, createManualJournalEntry } from '../controllers/journal.controller.js';
 
 const router = express.Router();
+
+router.get('/journal-entries', getJournalEntries);
+router.post('/journal-entries', createManualJournalEntry);
 
 router.get('/invoices', async (req, res) => {
   const { companyId } = req.query;

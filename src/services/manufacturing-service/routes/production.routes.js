@@ -11,7 +11,9 @@ import {
   getProductionStages,
   updateProductionStage,
   downloadTemplate,
-  uploadProductionRuns
+  uploadProductionRuns,
+  getProductionRunConsumption,
+  recordManualConsumption
 } from '../controllers/production.controller.js';
 import { getAllProductionPlans, createProductionPlan, updateProductionPlan, deleteProductionPlan, approveProductionPlan } from '../controllers/productionPlan.controller.js';
 
@@ -39,5 +41,8 @@ router.post('/:id/events', logProductionEvent);
 
 router.get('/:id/stages', getProductionStages);
 router.put('/:id/stages/:stageId', updateProductionStage);
+
+router.get('/:id/consumption', getProductionRunConsumption);
+router.post('/:id/consume', recordManualConsumption);
 
 export default router;

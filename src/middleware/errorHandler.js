@@ -12,7 +12,7 @@ export const errorHandler = (err, req, res, next) => {
   } else {
     // In development, send the stack trace for easier debugging
     res.status(statusCode).json({
-      error: err.name || 'Internal Server Error',
+      error: err.message || 'Internal Server Error',
       message: err.message,
       stack: err.stack
     });

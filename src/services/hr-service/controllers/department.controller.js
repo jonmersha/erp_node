@@ -1,4 +1,4 @@
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 import crypto from 'node:crypto';
 
 export const getAllDepartments = async (req, res) => {

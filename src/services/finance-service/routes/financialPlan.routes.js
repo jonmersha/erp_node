@@ -1,5 +1,5 @@
 import express from 'express';
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();

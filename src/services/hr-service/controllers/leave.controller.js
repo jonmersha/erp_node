@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 
 // Get leave requests
 export const getLeaves = async (req, res) => {
@@ -47,7 +47,7 @@ export const updateLeaveStatus = async (req, res) => {
   try {
     // Need an employee ID for the approver. Assuming the logged in user is the approver, we can just save their uid or null if they don't have an employee record.
     // Let's try to map the uid to an employee ID if possible, otherwise just leave it null for now.
-    const [empRows] = await pool.query('SELECT id FROM employees WHERE email = (SELECT email FROM users WHERE uid = ?)', [uid]);
+    const [empRows] = await pool.query('SELECT id FROM employees WHERE email = (SELECT email FROM authdb.users WHERE uid = ?)', [uid]);
     const approverId = empRows.length > 0 ? empRows[0].id : null;
 
     const [leaveRows] = await pool.query('SELECT employee_id FROM leave_requests WHERE id = ?', [id]);

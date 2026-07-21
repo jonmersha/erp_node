@@ -1,4 +1,4 @@
-import pool from '../../../db.js';
+import pool from '../../../config/db.config.js';
 
 export const getExecutiveReport = async (req, res) => {
   try {
