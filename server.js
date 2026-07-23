@@ -96,6 +96,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const PORT = process.env.PORT || 4000;
 
+
 const apiRouter = express.Router();
 
 // Apply rate limiting to all API requests (Production only)
@@ -214,7 +215,7 @@ async function startServer() {
 
     await initDb();
 
-    app.listen(PORT, () => {
+    app.listen(() => {
       console.log(
         `[Backend] Running on port ${PORT}`
       );
