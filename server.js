@@ -17,6 +17,7 @@ import categoryRoutes from './src/services/master-data-service/routes/category.r
 import inventoryRoutes from './src/services/supply-chain-service/routes/inventory.routes.js';
 import warehouseRoutes from './src/services/supply-chain-service/routes/warehouse.routes.js';
 import companyRoutes from './src/services/master-data-service/routes/company.routes.js';
+import erpUserRoutes from './src/services/master-data-service/routes/user.routes.js';
 import roleRoutes from './src/services/master-data-service/routes/role.routes.js';
 import departmentRoutes from './src/services/hr-service/routes/department.routes.js';
 import attendanceRoutes from './src/services/hr-service/routes/attendance.routes.js';
@@ -134,6 +135,7 @@ apiRouter.post('/upload', upload.single('image'), (req, res) => {
 });
 
 apiRouter.use('/companies', companyRoutes);
+apiRouter.use('/erp-users', erpUserRoutes); // Handles ERP specific user data (company, roles)
 // Auth Routes moved to auth-service
 apiRouter.use('/factories', factoryRoutes);
 apiRouter.use('/products', productRoutes);

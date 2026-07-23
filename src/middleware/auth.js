@@ -1,6 +1,5 @@
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp } from 'firebase-admin/app';
-import pool from '../config/db.config.js';
 
 // Initialize Firebase Admin with just the projectId (sufficient for verifying ID tokens)
 initializeApp({
@@ -24,13 +23,6 @@ export const authenticateToken = async (req, res, next) => {
       email: decodedToken.email
     };
     
-    // Add company_id from authdb if user exists
-    try {
-      const [rows] = await pool.query('SELECT company_id FROM authdb.users WHERE uid = ?', [decodedToken.uid]);
-      req.user.company_id = rows.length > 0 ? rows[0].company_id : null;
-    } catch (dbError) {
-      req.user.company_id = null;
-    }
 
     next();
   } catch (error) {
