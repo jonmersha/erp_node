@@ -205,6 +205,31 @@ import { initDb } from './src/config/db.schema.js';
 
 initDb();
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[Backend] API running on port ${PORT}`);
-});
+async function startServer() {
+  try {
+
+    console.log("Starting Milki ERP Backend...");
+    console.log("Environment:", process.env.NODE_ENV);
+    console.log("Port:", process.env.PORT);
+
+    await initDb();
+
+    app.listen(PORT, () => {
+      console.log(
+        `[Backend] Running on port ${PORT}`
+      );
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Startup failed:",
+      error
+    );
+
+    process.exit(1);
+
+  }
+}
+
+startServer();
