@@ -82,6 +82,12 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/uploads', express.static(uploadDir));
 
+const publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir);
+}
+app.use(express.static(publicDir));
+
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('combined'));
 } else {
