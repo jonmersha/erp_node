@@ -3,22 +3,7 @@ import crypto from 'node:crypto';
 
 export const getAllPurchaseOrders = async (req, res) => {
   try {
-    try {
-      await pool.query('ALTER TABLE purchase_orders ADD COLUMN warehouse_id CHAR(36) AFTER factory_id');
-      await pool.query('ALTER TABLE purchase_orders MODIFY COLUMN factory_id CHAR(36) NULL');
-    } catch(e) {}
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS purchase_order_items (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          order_id CHAR(36) NOT NULL,
-          item_id CHAR(36) NOT NULL,
-          item_name VARCHAR(255),
-          quantity DECIMAL(12, 2) NOT NULL,
-          price DECIMAL(12, 2) NOT NULL
-        )
-      `);
-    } catch(e) {}
+
 
     const { companyId } = req.query;
     let query = 'SELECT * FROM purchase_orders';
@@ -96,25 +81,6 @@ export const createPurchaseOrder = async (req, res) => {
       return res.status(400).json({ error: 'companyId and supplierId are required' });
     }
 
-    try {
-      await connection.query('ALTER TABLE purchase_orders ADD COLUMN warehouse_id CHAR(36) AFTER factory_id');
-      await connection.query('ALTER TABLE purchase_orders MODIFY COLUMN factory_id CHAR(36) NULL');
-    } catch(e) {} // Ignore if column already exists
-
-    try {
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS purchase_order_items (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          order_id CHAR(36) NOT NULL,
-          item_id CHAR(36) NOT NULL,
-          item_name VARCHAR(255),
-          quantity DECIMAL(12, 2) NOT NULL,
-          price DECIMAL(12, 2) NOT NULL
-        )
-      `);
-    } catch(e) {
-      console.error("Could not create purchase_order_items", e);
-    }
 
     await connection.query(
       'INSERT INTO purchase_orders (id, supplier_id, factory_id, warehouse_id, status, total_amount, company_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',

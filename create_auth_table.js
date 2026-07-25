@@ -13,7 +13,7 @@ async function run() {
       PRIMARY KEY (\`id\`),
       UNIQUE KEY \`uk_username\` (\`username\`),
       UNIQUE KEY \`uk_email\` (\`email\`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    ) ;
   `);
   console.log("Created local_auth_users table");
   process.exit(0);

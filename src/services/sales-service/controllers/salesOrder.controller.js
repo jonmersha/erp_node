@@ -3,18 +3,6 @@ import crypto from 'node:crypto';
 
 export const getAllSalesOrders = async (req, res) => {
   try {
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS sales_order_items (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          order_id CHAR(36) NOT NULL,
-          product_id CHAR(36) NOT NULL,
-          product_name VARCHAR(255),
-          quantity DECIMAL(12, 2) NOT NULL,
-          price DECIMAL(12, 2) NOT NULL
-        )
-      `);
-    } catch(e) {}
 
     const { companyId } = req.query;
     let query = 'SELECT * FROM sales_orders';
@@ -78,18 +66,6 @@ export const createSalesOrder = async (req, res) => {
       return res.status(400).json({ error: 'companyId is required' });
     }
 
-    try {
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS sales_order_items (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          order_id CHAR(36) NOT NULL,
-          product_id CHAR(36) NOT NULL,
-          product_name VARCHAR(255),
-          quantity DECIMAL(12, 2) NOT NULL,
-          price DECIMAL(12, 2) NOT NULL
-        )
-      `);
-    } catch(e) {}
 
     const orderId = id || crypto.randomUUID();
     const finalCustomerId = customerId || customer_id;
