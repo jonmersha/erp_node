@@ -77,7 +77,9 @@ const upload = multer({ storage: storage });
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(compression());
 app.use(cors());
 app.use(express.json());
