@@ -406,12 +406,12 @@ CREATE TABLE IF NOT EXISTS \`grain_intake_logs\` (
 
     await pool.query(`
 CREATE TABLE IF NOT EXISTS \`grn_items\` (
-  \`id\` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  \`grn_id\` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  \`item_id\` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  \`id\` char(36) NOT NULL,
+  \`grn_id\` char(36) NOT NULL,
+  \`item_id\` char(36) NOT NULL,
   \`quantity\` decimal(12,2) NOT NULL,
   \`price\` decimal(12,2) NOT NULL,
-  \`company_id\` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  \`company_id\` char(36) NOT NULL,
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`),
   KEY \`idx_grn_id\` (\`grn_id\`)
@@ -494,15 +494,15 @@ CREATE TABLE IF NOT EXISTS \`inventory_transactions\` (
 
     await pool.query(`
 CREATE TABLE IF NOT EXISTS \`journal_entries\` (
-  \`id\` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  \`id\` char(36) NOT NULL,
   \`date\` datetime NOT NULL,
-  \`account_type\` enum('inventory','accounts_payable','accounts_receivable','cash','cogs','revenue','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
+  \`account_type\` enum('inventory','accounts_payable','accounts_receivable','cash','cogs','revenue','expense') NOT NULL,
   \`amount\` decimal(15,2) NOT NULL,
-  \`entry_type\` enum('debit','credit') COLLATE utf8mb4_unicode_ci NOT NULL,
-  \`reference_type\` enum('grn','sales_invoice','payment','manual') COLLATE utf8mb4_unicode_ci NOT NULL,
-  \`reference_id\` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  \`description\` text COLLATE utf8mb4_unicode_ci,
-  \`company_id\` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  \`entry_type\` enum('debit','credit') NOT NULL,
+  \`reference_type\` enum('grn','sales_invoice','payment','manual') NOT NULL,
+  \`reference_id\` char(36) NOT NULL,
+  \`description\` text,
+  \`company_id\` char(36) NOT NULL,
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`),
   KEY \`idx_company_date\` (\`company_id\`,\`date\`)
