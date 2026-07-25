@@ -1,10 +1,4 @@
-import { getAuth } from 'firebase-admin/auth';
-import { initializeApp } from 'firebase-admin/app';
-
-// Initialize Firebase Admin with just the projectId (sufficient for verifying ID tokens)
-initializeApp({
-  projectId: "sheger-systems",
-});
+import jwt from 'jsonwebtoken';
 
 export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -15,18 +9,19 @@ export const authenticateToken = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    const decodedToken = await getAuth().verifyIdToken(token);
+    const jwtSecret = process.env.JWT_SECRET || 'fallback_dev_secret_key';
+    const decodedToken = jwt.verify(token, jwtSecret);
     
     // Attach user to req
     req.user = {
       uid: decodedToken.uid,
-      email: decodedToken.email
+      email: decodedToken.email,
+      name: decodedToken.name
     };
     
-
     next();
   } catch (error) {
-    console.error('Firebase Auth Error:', error);
+    console.error('Custom JWT Auth Error:', error.message);
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
