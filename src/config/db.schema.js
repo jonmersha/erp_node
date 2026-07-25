@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS \`attendance\` (
   KEY \`fk_att_company\` (\`company_id\`),
   CONSTRAINT \`fk_att_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_att_employee\` FOREIGN KEY (\`employee_id\`) REFERENCES \`employees\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS \`audit_logs\` (
   \`company_id\` varchar(100) NOT NULL,
   \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS \`bids\` (
   KEY \`fk_bids_supplier\` (\`supplier_id\`),
   CONSTRAINT \`fk_bids_rfq\` FOREIGN KEY (\`rfq_id\`) REFERENCES \`rfqs\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_bids_supplier\` FOREIGN KEY (\`supplier_id\`) REFERENCES \`suppliers\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS \`budgets\` (
   KEY \`company_id\` (\`company_id\`),
   CONSTRAINT \`budgets_ibfk_1\` FOREIGN KEY (\`cost_center_id\`) REFERENCES \`cost_centers\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`budgets_ibfk_2\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS \`categories\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_category_company\` (\`company_id\`),
   CONSTRAINT \`fk_category_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS \`companies\` (
   \`owner_id\` varchar(255) NOT NULL,
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS \`cost_centers\` (
   PRIMARY KEY (\`id\`),
   KEY \`company_id\` (\`company_id\`),
   CONSTRAINT \`cost_centers_ibfk_1\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS \`crm_tickets\` (
   KEY \`fk_ticket_company_sv\` (\`company_id\`),
   CONSTRAINT \`fk_ticket_company_sv\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_ticket_cust_sv\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS \`customer_interactions\` (
   KEY \`fk_inter_company_sv\` (\`company_id\`),
   CONSTRAINT \`fk_inter_company_sv\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_inter_cust_sv\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS \`customers\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_cust_company_sv\` (\`company_id\`),
   CONSTRAINT \`fk_cust_company_sv\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS \`delivery_notes\` (
   CONSTRAINT \`fk_dn_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_dn_outlet\` FOREIGN KEY (\`outlet_id\`) REFERENCES \`sales_outlets\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_dn_so\` FOREIGN KEY (\`sales_order_id\`) REFERENCES \`sales_orders\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS \`departments\` (
   CONSTRAINT \`fk_dept_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_dept_manager\` FOREIGN KEY (\`manager_id\`) REFERENCES \`employees\` (\`id\`) ON DELETE SET NULL,
   CONSTRAINT \`fk_dept_parent\` FOREIGN KEY (\`parent_department_id\`) REFERENCES \`departments\` (\`id\`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -219,7 +219,7 @@ CREATE TABLE IF NOT EXISTS \`dynamic_pricing_rules\` (
   KEY \`fk_dpr_product\` (\`product_id\`),
   CONSTRAINT \`fk_dpr_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_dpr_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -243,7 +243,7 @@ CREATE TABLE IF NOT EXISTS \`employees\` (
   CONSTRAINT \`fk_emp_manager\` FOREIGN KEY (\`manager_id\`) REFERENCES \`employees\` (\`id\`) ON DELETE SET NULL,
   CONSTRAINT \`fk_employee_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_employee_factory\` FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -264,7 +264,7 @@ CREATE TABLE IF NOT EXISTS \`expenses\` (
   KEY \`company_id\` (\`company_id\`),
   CONSTRAINT \`expenses_ibfk_1\` FOREIGN KEY (\`cost_center_id\`) REFERENCES \`cost_centers\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`expenses_ibfk_2\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS \`factories\` (
   KEY \`fk_factory_manager\` (\`manager_id\`),
   CONSTRAINT \`fk_factory_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_factory_manager\` FOREIGN KEY (\`manager_id\`) REFERENCES \`users\` (\`uid\`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS \`finance_invoices\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_fin_inv_company\` (\`company_id\`),
   CONSTRAINT \`fk_fin_inv_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -310,7 +310,7 @@ CREATE TABLE IF NOT EXISTS \`finance_payments\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_fin_pay_company\` (\`company_id\`),
   CONSTRAINT \`fk_fin_pay_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -325,7 +325,7 @@ CREATE TABLE IF NOT EXISTS \`financial_plans\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_fin_plan_company\` (\`company_id\`),
   CONSTRAINT \`fk_fin_plan_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -344,7 +344,7 @@ CREATE TABLE IF NOT EXISTS \`fixed_assets\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_fixed_asset_company\` (\`company_id\`),
   CONSTRAINT \`fk_fixed_asset_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -364,7 +364,7 @@ CREATE TABLE IF NOT EXISTS \`fleet_consumptions\` (
   KEY \`company_id\` (\`company_id\`),
   CONSTRAINT \`fleet_consumptions_ibfk_1\` FOREIGN KEY (\`vehicle_id\`) REFERENCES \`vehicles\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fleet_consumptions_ibfk_2\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -381,7 +381,7 @@ CREATE TABLE IF NOT EXISTS \`gate_passes\` (
   KEY \`fk_gp_company\` (\`company_id\`),
   CONSTRAINT \`fk_gp_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_gp_dn\` FOREIGN KEY (\`delivery_note_id\`) REFERENCES \`delivery_notes\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -401,7 +401,7 @@ CREATE TABLE IF NOT EXISTS \`grain_intake_logs\` (
   KEY \`fk_intake_company\` (\`company_id\`),
   CONSTRAINT \`fk_intake_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_intake_supplier\` FOREIGN KEY (\`supplier_id\`) REFERENCES \`suppliers\` (\`id\`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -415,7 +415,7 @@ CREATE TABLE IF NOT EXISTS \`grn_items\` (
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`),
   KEY \`idx_grn_id\` (\`grn_id\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -434,7 +434,7 @@ CREATE TABLE IF NOT EXISTS \`grns\` (
   CONSTRAINT \`fk_grn_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_grn_po\` FOREIGN KEY (\`purchase_order_id\`) REFERENCES \`purchase_orders\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_grn_warehouse\` FOREIGN KEY (\`warehouse_id\`) REFERENCES \`warehouses\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -451,7 +451,7 @@ CREATE TABLE IF NOT EXISTS \`inventory\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_inv_company\` (\`company_id\`),
   CONSTRAINT \`fk_inv_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -469,7 +469,7 @@ CREATE TABLE IF NOT EXISTS \`inventory_lots\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_lot_company\` (\`company_id\`),
   CONSTRAINT \`fk_lot_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -489,7 +489,7 @@ CREATE TABLE IF NOT EXISTS \`inventory_transactions\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_inv_tx_company\` (\`company_id\`),
   CONSTRAINT \`fk_inv_tx_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -506,7 +506,7 @@ CREATE TABLE IF NOT EXISTS \`journal_entries\` (
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`),
   KEY \`idx_company_date\` (\`company_id\`,\`date\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -528,7 +528,7 @@ CREATE TABLE IF NOT EXISTS \`leave_requests\` (
   CONSTRAINT \`fk_lr_approver\` FOREIGN KEY (\`approved_by\`) REFERENCES \`employees\` (\`id\`) ON DELETE SET NULL,
   CONSTRAINT \`fk_lr_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_lr_employee\` FOREIGN KEY (\`employee_id\`) REFERENCES \`employees\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -543,7 +543,7 @@ CREATE TABLE IF NOT EXISTS \`local_auth_users\` (
   PRIMARY KEY (\`id\`),
   UNIQUE KEY \`uk_username\` (\`username\`),
   UNIQUE KEY \`uk_email\` (\`email\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -558,7 +558,7 @@ CREATE TABLE IF NOT EXISTS \`logistics_shipments\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_logisticsshipment_company\` (\`company_id\`),
   CONSTRAINT \`fk_logisticsshipment_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -574,7 +574,7 @@ CREATE TABLE IF NOT EXISTS \`maintenance_logs\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_maintenancelog_company\` (\`company_id\`),
   CONSTRAINT \`fk_maintenancelog_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -597,7 +597,7 @@ CREATE TABLE IF NOT EXISTS \`milling_logs\` (
   CONSTRAINT \`fk_milling_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_milling_operator\` FOREIGN KEY (\`shift_operator_id\`) REFERENCES \`users\` (\`uid\`) ON DELETE SET NULL,
   CONSTRAINT \`fk_milling_run\` FOREIGN KEY (\`run_id\`) REFERENCES \`production_runs\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -615,7 +615,7 @@ CREATE TABLE IF NOT EXISTS \`oidc_payloads\` (
   KEY \`idx_grantId\` (\`grantId\`),
   KEY \`idx_userCode\` (\`userCode\`),
   KEY \`idx_uid\` (\`uid\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -637,7 +637,7 @@ CREATE TABLE IF NOT EXISTS \`packaging_logs\` (
   CONSTRAINT \`fk_packaging_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_packaging_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE SET NULL,
   CONSTRAINT \`fk_packaging_warehouse\` FOREIGN KEY (\`warehouse_id\`) REFERENCES \`warehouses\` (\`id\`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -663,7 +663,7 @@ CREATE TABLE IF NOT EXISTS \`procurement_plans\` (
   CONSTRAINT \`fk_procplan_factory\` FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_procplan_material\` FOREIGN KEY (\`material_id\`) REFERENCES \`raw_materials\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_procplan_warehouse\` FOREIGN KEY (\`warehouse_id\`) REFERENCES \`warehouses\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -681,7 +681,7 @@ CREATE TABLE IF NOT EXISTS \`production_events\` (
   KEY \`fk_event_company\` (\`company_id\`),
   CONSTRAINT \`fk_event_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_event_run\` FOREIGN KEY (\`run_id\`) REFERENCES \`production_runs\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -704,7 +704,7 @@ CREATE TABLE IF NOT EXISTS \`production_plans\` (
   CONSTRAINT \`fk_prodplan_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_prodplan_factory\` FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_prodplan_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -727,7 +727,7 @@ CREATE TABLE IF NOT EXISTS \`production_run_stages\` (
   KEY \`fk_stage_operator\` (\`assigned_operator_id\`),
   CONSTRAINT \`fk_stage_operator\` FOREIGN KEY (\`assigned_operator_id\`) REFERENCES \`users\` (\`uid\`) ON DELETE SET NULL,
   CONSTRAINT \`fk_stage_run\` FOREIGN KEY (\`run_id\`) REFERENCES \`production_runs\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -752,7 +752,7 @@ CREATE TABLE IF NOT EXISTS \`production_runs\` (
   CONSTRAINT \`fk_run_factory\` FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_run_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_run_recipe\` FOREIGN KEY (\`recipe_id\`) REFERENCES \`recipes\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -770,7 +770,7 @@ CREATE TABLE IF NOT EXISTS \`products\` (
   KEY \`fk_product_category\` (\`category_id\`),
   CONSTRAINT \`fk_product_category\` FOREIGN KEY (\`category_id\`) REFERENCES \`categories\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_product_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -784,7 +784,7 @@ CREATE TABLE IF NOT EXISTS \`purchase_order_items\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_poi_order\` (\`order_id\`),
   CONSTRAINT \`fk_poi_order\` FOREIGN KEY (\`order_id\`) REFERENCES \`purchase_orders\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -808,7 +808,7 @@ CREATE TABLE IF NOT EXISTS \`purchase_orders\` (
   CONSTRAINT \`fk_po_factory\` FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_po_supplier\` FOREIGN KEY (\`supplier_id\`) REFERENCES \`suppliers\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_po_warehouse\` FOREIGN KEY (\`warehouse_id\`) REFERENCES \`warehouses\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -832,7 +832,7 @@ CREATE TABLE IF NOT EXISTS \`purchase_requisitions\` (
   KEY \`fk_pr_company\` (\`company_id\`),
   CONSTRAINT \`fk_pr_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_pr_dept\` FOREIGN KEY (\`department_id\`) REFERENCES \`departments\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -850,7 +850,7 @@ CREATE TABLE IF NOT EXISTS \`quality_checks\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_qc_company\` (\`company_id\`),
   CONSTRAINT \`fk_qc_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -873,7 +873,7 @@ CREATE TABLE IF NOT EXISTS \`quality_inspections\` (
   CONSTRAINT \`fk_qi_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_qi_inspector\` FOREIGN KEY (\`inspector_id\`) REFERENCES \`users\` (\`uid\`) ON DELETE SET NULL,
   CONSTRAINT \`fk_qi_wb\` FOREIGN KEY (\`weighbridge_log_id\`) REFERENCES \`weighbridge_logs\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -885,7 +885,7 @@ CREATE TABLE IF NOT EXISTS \`raw_materials\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_material_company\` (\`company_id\`),
   CONSTRAINT \`fk_material_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -903,7 +903,7 @@ CREATE TABLE IF NOT EXISTS \`recipes\` (
   KEY \`fk_recipe_product\` (\`product_id\`),
   CONSTRAINT \`fk_recipe_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_recipe_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -918,7 +918,7 @@ CREATE TABLE IF NOT EXISTS \`rfq_items\` (
   KEY \`fk_rfq_items_material\` (\`raw_material_id\`),
   CONSTRAINT \`fk_rfq_items_material\` FOREIGN KEY (\`raw_material_id\`) REFERENCES \`raw_materials\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_rfq_items_rfq\` FOREIGN KEY (\`rfq_id\`) REFERENCES \`rfqs\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -934,7 +934,7 @@ CREATE TABLE IF NOT EXISTS \`rfqs\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_rfq_company\` (\`company_id\`),
   CONSTRAINT \`fk_rfq_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -950,7 +950,7 @@ CREATE TABLE IF NOT EXISTS \`roles\` (
   UNIQUE KEY \`uk_role_name_company\` (\`name\`,\`company_id\`),
   KEY \`fk_role_company\` (\`company_id\`),
   CONSTRAINT \`fk_role_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -962,7 +962,7 @@ CREATE TABLE IF NOT EXISTS \`sales_order_items\` (
   \`quantity\` decimal(12,2) NOT NULL,
   \`price\` decimal(12,2) NOT NULL,
   PRIMARY KEY (\`id\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -981,7 +981,7 @@ CREATE TABLE IF NOT EXISTS \`sales_orders\` (
   CONSTRAINT \`fk_so_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_so_customer\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_so_outlet\` FOREIGN KEY (\`outlet_id\`) REFERENCES \`sales_outlets\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -996,7 +996,7 @@ CREATE TABLE IF NOT EXISTS \`sales_outlets\` (
   KEY \`fk_outlet_factory\` (\`factory_id\`),
   CONSTRAINT \`fk_outlet_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_outlet_factory\` FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1019,7 +1019,7 @@ CREATE TABLE IF NOT EXISTS \`sales_plans\` (
   CONSTRAINT \`fk_salesplan_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_salesplan_factory\` FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_salesplan_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1037,7 +1037,7 @@ CREATE TABLE IF NOT EXISTS \`suppliers\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_supplier_company\` (\`company_id\`),
   CONSTRAINT \`fk_supplier_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1049,7 +1049,7 @@ CREATE TABLE IF NOT EXISTS \`units\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_unit_company\` (\`company_id\`),
   CONSTRAINT \`fk_unit_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1067,7 +1067,7 @@ CREATE TABLE IF NOT EXISTS \`users\` (
   KEY \`fk_user_unit\` (\`unit_id\`),
   CONSTRAINT \`fk_user_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_user_unit\` FOREIGN KEY (\`unit_id\`) REFERENCES \`units\` (\`id\`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1088,7 +1088,7 @@ CREATE TABLE IF NOT EXISTS \`vehicle_requests\` (
   PRIMARY KEY (\`id\`),
   KEY \`company_id\` (\`company_id\`),
   CONSTRAINT \`vehicle_requests_ibfk_1\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1104,7 +1104,7 @@ CREATE TABLE IF NOT EXISTS \`vehicles\` (
   PRIMARY KEY (\`id\`),
   KEY \`company_id\` (\`company_id\`),
   CONSTRAINT \`vehicles_ibfk_1\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1124,7 +1124,7 @@ CREATE TABLE IF NOT EXISTS \`warehouse_locations\` (
   KEY \`fk_loc_company\` (\`company_id\`),
   CONSTRAINT \`fk_loc_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_loc_warehouse\` FOREIGN KEY (\`warehouse_id\`) REFERENCES \`warehouses\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1142,7 +1142,7 @@ CREATE TABLE IF NOT EXISTS \`warehouses\` (
   CONSTRAINT \`fk_warehouse_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_warehouse_factory\` FOREIGN KEY (\`factory_id\`) REFERENCES \`factories\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_warehouse_manager\` FOREIGN KEY (\`manager_id\`) REFERENCES \`users\` (\`uid\`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1162,7 +1162,7 @@ CREATE TABLE IF NOT EXISTS \`weighbridge_logs\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_wb_company\` (\`company_id\`),
   CONSTRAINT \`fk_wb_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1177,7 +1177,7 @@ CREATE TABLE IF NOT EXISTS \`workflow_template_stages\` (
   PRIMARY KEY (\`id\`),
   KEY \`fk_template\` (\`template_id\`),
   CONSTRAINT \`fk_template\` FOREIGN KEY (\`template_id\`) REFERENCES \`workflow_templates\` (\`id\`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query(`
@@ -1188,7 +1188,7 @@ CREATE TABLE IF NOT EXISTS \`workflow_templates\` (
   \`company_id\` char(36) NOT NULL,
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
     await pool.query('SET FOREIGN_KEY_CHECKS=1;');
