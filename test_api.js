@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 
 async function test() {
-  const token = jwt.sign({ id: 'test', companyId: 'test' }, process.env.JWT_SECRET || 'fallback_secret');
+  const token = jwt.sign({ uid: 'test', companyId: 'test' }, 'fallback_dev_secret_key');
   try {
     const res = await fetch('http://localhost:4000/api/financialPlans?companyId=1', {
       headers: { Authorization: `Bearer ${token}` }
