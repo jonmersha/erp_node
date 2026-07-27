@@ -241,7 +241,7 @@ async function startServer() {
 
     await initDb();
 
-    app.listen('0.0.0.0', () => {
+    app.listen(() => {
       console.log(
         `[Backend] Running on port ${PORT}`
       );
