@@ -845,11 +845,50 @@ CREATE TABLE IF NOT EXISTS \`quality_checks\` (
   \`check_date\` datetime NOT NULL,
   \`status\` enum('passed','failed','pending','quarantined') NOT NULL DEFAULT 'pending',
   \`notes\` text,
+  \`checklist_results\` json DEFAULT NULL,
   \`company_id\` char(36) NOT NULL,
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`),
   KEY \`fk_qc_company\` (\`company_id\`),
   CONSTRAINT \`fk_qc_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
+    `);
+
+    await pool.query(`
+CREATE TABLE IF NOT EXISTS \`quality_checklists\` (
+  \`id\` char(36) NOT NULL,
+  \`name\` varchar(255) NOT NULL,
+  \`category\` enum('production','receiving','inventory') NOT NULL,
+  \`items\` json NOT NULL,
+  \`company_id\` char(36) NOT NULL,
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (\`id\`),
+  KEY \`fk_qc_list_company\` (\`company_id\`),
+  CONSTRAINT \`fk_qc_list_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
+    `);
+
+    await pool.query(`
+CREATE TABLE IF NOT EXISTS \`non_conformance_reports\` (
+  \`id\` char(36) NOT NULL,
+  \`quality_check_id\` char(36) NOT NULL,
+  \`issue_description\` text NOT NULL,
+  \`severity\` enum('low','medium','high') NOT NULL DEFAULT 'medium',
+  \`status\` enum('open','investigating','resolved') NOT NULL DEFAULT 'open',
+  \`rca_details\` text,
+  \`capa_details\` text,
+  \`disposition\` enum('pending','quarantine','rework','disposal','accept_as_is','return_to_vendor') NOT NULL DEFAULT 'pending',
+  \`resolution_notes\` text,
+  \`company_id\` char(36) NOT NULL,
+  \`created_by\` char(36) NOT NULL,
+  \`resolved_by\` char(36) DEFAULT NULL,
+  \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
+  \`updated_at\` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (\`id\`),
+  KEY \`fk_ncr_qc\` (\`quality_check_id\`),
+  KEY \`fk_ncr_company\` (\`company_id\`),
+  CONSTRAINT \`fk_ncr_qc\` FOREIGN KEY (\`quality_check_id\`) REFERENCES \`quality_checks\` (\`id\`) ON DELETE CASCADE,
+  CONSTRAINT \`fk_ncr_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
 
