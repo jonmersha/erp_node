@@ -8,6 +8,7 @@ import { authenticateToken } from './src/middleware/auth.js';
 import { errorHandler } from './src/middleware/errorHandler.js';
 import procurementRoutes from './src/services/supply-chain-service/routes/procurement.routes.js';
 import salesRoutes from './src/services/sales-service/routes/sales.routes.js';
+import salesPlanRoutes from './src/services/sales-service/routes/salesPlan.routes.js';
 import productionGroupRoutes from './src/services/manufacturing-service/routes/productionGroup.routes.js';
 import grnRoutes from './src/services/supply-chain-service/routes/grn.routes.js';
 import deliveryNoteRoutes from './src/services/supply-chain-service/routes/deliveryNote.routes.js';
@@ -175,6 +176,8 @@ apiRouter.use('/recipes', recipeRoutes);
 apiRouter.use('/sourcing', sourcingRoutes);
 apiRouter.use('/quality', qualityRoutes);
 apiRouter.use('/workflowTemplates', workflowRoutes);
+apiRouter.use('/financialPlans', financialPlanRoutes);
+apiRouter.use('/salesPlans', salesPlanRoutes);
 
 apiRouter.use('/grns', grnRoutes);
 apiRouter.use('/deliveryNotes', deliveryNoteRoutes);
@@ -188,6 +191,21 @@ apiRouter.use('/reports', reportsRoutes);
 apiRouter.use('/backup', backupRoutes);
 apiRouter.use('/expenses', expenseRoutes);
 apiRouter.use('/fleet', fleetRoutes);
+
+apiRouter.get('/settings', (req, res) => {
+  res.json([
+    { id: '1', settingKey: 'Theme', value: 'Light' },
+    { id: '2', settingKey: 'Currency', value: 'ETB' },
+    { id: '3', settingKey: 'Timezone', value: 'EAT' }
+  ]);
+});
+
+apiRouter.get('/audit-logs', (req, res) => {
+  res.json([
+    { id: '1', action: 'User Login', user: 'Admin', timestamp: new Date().toISOString() },
+    { id: '2', action: 'Update Role', user: 'Admin', timestamp: new Date().toISOString() },
+  ]);
+});
 
 // Catch-all for API 404s
 apiRouter.use((req, res, next) => {
@@ -219,7 +237,7 @@ async function startServer() {
 
     await initDb();
 
-    app.listen(() => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(
         `[Backend] Running on port ${PORT}`
       );

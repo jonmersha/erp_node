@@ -1,30 +1,28 @@
 import jwt from 'jsonwebtoken';
+import pool from '../config/db.config.js';
+import '../config/firebase.js'; // Ensure it initializes
+import { getAuth } from 'firebase-admin/auth';
 
 export const authenticateToken = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: No token provided' });
-  }
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  const token = authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
   
   try {
     const jwtSecret = process.env.JWT_SECRET || 'fallback_dev_secret_key';
     
     let decodedToken;
     try {
+      // First try to verify as a native Custom JWT
       decodedToken = jwt.verify(token, jwtSecret);
     } catch (err) {
-      // If it fails to verify using our secret, check if it's a valid Firebase token structure
-      // Note: In production you'd use firebase-admin.auth().verifyIdToken() 
-      // but decoding works for bypassing auth-service.
-      decodedToken = jwt.decode(token);
-      if (!decodedToken || (!decodedToken.uid && !decodedToken.user_id)) {
-        throw new Error('Invalid or corrupted token');
-      }
-      // Firebase puts the uid in 'user_id' or 'sub'
-      if (!decodedToken.uid) {
-        decodedToken.uid = decodedToken.user_id || decodedToken.sub;
+      // If it fails, try verifying it as a Firebase ID token using firebase-admin
+      try {
+        decodedToken = await getAuth().verifyIdToken(token);
+      } catch (firebaseErr) {
+        console.error("Token verification failed (JWT & Firebase):", firebaseErr.message);
+        throw new Error('Invalid or expired token');
       }
     }
     

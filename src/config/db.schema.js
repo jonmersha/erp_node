@@ -1063,12 +1063,22 @@ CREATE TABLE IF NOT EXISTS \`users\` (
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   \`status\` enum('active','inactive') DEFAULT 'active',
   PRIMARY KEY (\`uid\`),
+  UNIQUE KEY \`unique_email\` (\`email\`),
   KEY \`fk_user_company\` (\`company_id\`),
   KEY \`fk_user_unit\` (\`unit_id\`),
   CONSTRAINT \`fk_user_company\` FOREIGN KEY (\`company_id\`) REFERENCES \`companies\` (\`id\`) ON DELETE CASCADE,
   CONSTRAINT \`fk_user_unit\` FOREIGN KEY (\`unit_id\`) REFERENCES \`units\` (\`id\`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
     `);
+
+    // Safely attempt to add the unique constraint if it doesn't exist (for existing databases)
+    try {
+      await pool.query('ALTER TABLE \`users\` ADD UNIQUE INDEX \`unique_email\` (\`email\`);');
+    } catch (err) {
+      if (err.code !== 'ER_DUP_KEYNAME') {
+        throw err;
+      }
+    }
 
     await pool.query(`
 CREATE TABLE IF NOT EXISTS \`vehicle_requests\` (

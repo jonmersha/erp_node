@@ -15,7 +15,7 @@ import {
   getProductionRunConsumption,
   recordManualConsumption
 } from '../controllers/production.controller.js';
-import { getAllProductionPlans, createProductionPlan, updateProductionPlan, deleteProductionPlan, approveProductionPlan } from '../controllers/productionPlan.controller.js';
+import { getAllProductionPlans, createProductionPlan, updateProductionPlan, deleteProductionPlan, approveProductionPlan, rejectProductionPlan } from '../controllers/productionPlan.controller.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -28,7 +28,8 @@ router.post('/packaging-sensor', logPackagingSensor);
 router.get('/plans', getAllProductionPlans);
 router.post('/plans', createProductionPlan);
 router.put('/plans/:id', updateProductionPlan);
-router.put('/plans/:id/approve', approveProductionPlan);
+router.post('/plans/:id/approve', approveProductionPlan);
+router.post('/plans/:id/reject', rejectProductionPlan);
 router.delete('/plans/:id', deleteProductionPlan);
 
 router.get('/', getAllProductionRuns);

@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.get('/', getPurchaseRequisitions);
 router.post('/', createPurchaseRequisition);
-router.put('/:id/approve', approvePurchaseRequisition);
-router.put('/:id/reject', rejectPurchaseRequisition);
+router.post('/:id/approve', approvePurchaseRequisition);
+router.post('/:id/reject', rejectPurchaseRequisition);
 
 export default router;

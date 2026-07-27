@@ -19,7 +19,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "init-db": "node src/scripts/initDb.js",
-    "make-admin": "node make-admin.js"
+    "admin": "node make-admin.js"
   },
   "dependencies": {
     "adm-zip": "^0.6.0",
@@ -30,6 +30,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.0",
+    "firebase-admin": "^14.2.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.1.0",

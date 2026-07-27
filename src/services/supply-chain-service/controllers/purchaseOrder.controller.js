@@ -172,3 +172,26 @@ export const approvePurchaseOrder = async (req, res) => {
     res.status(500).json({ error: 'Failed to approve purchase order' });
   }
 };
+
+export const rejectPurchaseOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approverId, rejectionReason } = req.body;
+
+    const [items] = await pool.query('SELECT created_by FROM purchase_orders WHERE id = ?', [id]);
+    if (items.length === 0) return res.status(404).json({ error: 'Item not found' });
+    
+    if (items[0].created_by === approverId) {
+      return res.status(403).json({ error: 'Maker cannot be the checker. You cannot reject this.' });
+    }
+
+    await pool.query(
+      'UPDATE purchase_orders SET status = ?, approved_by = ?, rejection_reason = ? WHERE id = ?',
+      ['rejected', approverId, rejectionReason || null, id]
+    );
+    res.json({ message: 'PurchaseOrder rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting PurchaseOrder:', error);
+    res.status(500).json({ error: 'Failed to reject PurchaseOrder' });
+  }
+};

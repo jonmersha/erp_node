@@ -6,7 +6,7 @@ const router = Router();
 router.get('/', getAllSuppliers);
 router.post('/', createSupplier);
 router.put('/:id', updateSupplier);
-router.put('/:id/approve', approveSupplier);
+router.post('/:id/approve', approveSupplier);
 router.delete('/:id', deleteSupplier);
 
 export default router;

@@ -77,13 +77,22 @@ export const approvePurchaseRequisition = async (req, res) => {
 export const rejectPurchaseRequisition = async (req, res) => {
   try {
     const { id } = req.params;
+    const { approverId, rejectionReason } = req.body;
+
+    const [items] = await pool.query('SELECT created_by FROM purchase_requisitions WHERE id = ?', [id]);
+    if (items.length === 0) return res.status(404).json({ error: 'Item not found' });
+    
+    if (items[0].created_by === approverId) {
+      return res.status(403).json({ error: 'Maker cannot be the checker. You cannot reject this.' });
+    }
+
     await pool.query(
-      'UPDATE purchase_requisitions SET status = ? WHERE id = ?',
-      ['rejected', id]
+      'UPDATE purchase_requisitions SET status = ?, approved_by = ?, rejection_reason = ? WHERE id = ?',
+      ['rejected', approverId, rejectionReason || null, id]
     );
-    res.json({ message: 'Purchase Requisition rejected' });
+    res.json({ message: 'PurchaseRequisition rejected successfully' });
   } catch (error) {
-    console.error('Error rejecting PR:', error);
-    res.status(500).json({ error: 'Failed to reject purchase requisition' });
+    console.error('Error rejecting PurchaseRequisition:', error);
+    res.status(500).json({ error: 'Failed to reject PurchaseRequisition' });
   }
 };

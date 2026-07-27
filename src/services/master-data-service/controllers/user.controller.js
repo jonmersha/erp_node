@@ -42,13 +42,32 @@ export const createErpUser = async (req, res) => {
     // Convert roles to array if it's not
     const parsedRoles = Array.isArray(roles) ? roles : (roles ? [roles] : []);
     
-    await pool.query(
-      `INSERT INTO users (uid, email, name, roles, unit_id, company_id, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?) 
-       ON DUPLICATE KEY UPDATE 
-       email = VALUES(email), name = VALUES(name), company_id = VALUES(company_id), unit_id = VALUES(unit_id), roles = VALUES(roles), status = VALUES(status)`,
-      [uid, email, name || '', JSON.stringify(parsedRoles), finalUnitId, finalCompanyId, finalStatus]
-    );
+    // Check if user exists by email
+    const [existingByEmail] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    
+    if (existingByEmail.length > 0) {
+      // User exists by email. Link the Firebase UID to this account.
+      // This allows admins to pre-create accounts by email, or users to retain their account if their Firebase UID changes.
+      await pool.query(
+        `UPDATE users SET 
+         uid = ?, name = COALESCE(NULLIF(?, ''), name), 
+         unit_id = COALESCE(?, unit_id), 
+         company_id = COALESCE(?, company_id), 
+         status = COALESCE(?, status)
+         WHERE email = ?`,
+        [uid, name || '', finalUnitId, finalCompanyId, finalStatus, email]
+      );
+    } else {
+      // New user entirely
+      await pool.query(
+        `INSERT INTO users (uid, email, name, roles, unit_id, company_id, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?) 
+         ON DUPLICATE KEY UPDATE 
+         email = VALUES(email), name = VALUES(name), company_id = VALUES(company_id), unit_id = VALUES(unit_id), roles = VALUES(roles), status = VALUES(status)`,
+        [uid, email, name || '', JSON.stringify(parsedRoles), finalUnitId, finalCompanyId, finalStatus]
+      );
+    }
+    
     res.status(201).json({ uid });
   } catch (error) {
     console.error('Create ERP user error:', error);
