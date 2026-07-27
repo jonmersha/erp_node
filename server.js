@@ -82,7 +82,11 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(compression());
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use('/api/uploads', express.static(uploadDir));
 
@@ -237,7 +241,7 @@ async function startServer() {
 
     await initDb();
 
-    app.listen(PORT, '0.0.0.0', () => {
+    app.listen('0.0.0.0', () => {
       console.log(
         `[Backend] Running on port ${PORT}`
       );
