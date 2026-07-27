@@ -16,7 +16,7 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
+    "start": "node add_maker_checker_columns.js && node server.js",
     "dev": "node --watch server.js",
     "init-db": "node src/scripts/initDb.js",
     "admin": "node make-admin.js"
