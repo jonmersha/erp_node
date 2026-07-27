@@ -1,16 +1,15 @@
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import pool from './src/config/db.config.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '.env') });
-
-import { initDb } from './src/schema.js';
-initDb().then(() => {
-  console.log('initDb finished');
+async function test() {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, company_id as companyId, year, quarter, target_revenue as targetRevenue, target_expense as targetExpense, status, created_by as createdBy, approved_by as approvedBy FROM financial_plans WHERE company_id = ? ORDER BY year DESC, quarter DESC',
+      ['1']
+    );
+    console.log('Query success', rows.length);
+  } catch (err) {
+    console.error('Query error:', err);
+  }
   process.exit(0);
-}).catch(e => {
-  console.error('initDb error:', e);
-  process.exit(1);
-});
+}
+test();

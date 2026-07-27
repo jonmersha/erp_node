@@ -14,7 +14,8 @@ router.get('/', async (req, res) => {
     );
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch financial plans' });
+    console.error("financialPlans GET Error:", error);
+    res.status(500).json({ error: 'Failed to fetch financial plans', details: error.message });
   }
 });
 
