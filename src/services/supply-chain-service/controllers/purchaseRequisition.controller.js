@@ -55,19 +55,37 @@ export const approvePurchaseRequisition = async (req, res) => {
     const { approverId } = req.body;
 
     // Check Maker/Checker
-    const [prs] = await pool.query('SELECT created_by, quantity FROM purchase_requisitions WHERE id = ?', [id]);
+    const [prs] = await pool.query('SELECT * FROM purchase_requisitions WHERE id = ?', [id]);
     if (prs.length === 0) return res.status(404).json({ error: 'PR not found' });
     
     if (prs[0].created_by === approverId) {
       return res.status(403).json({ error: 'Maker cannot be the checker. You cannot approve this requisition.' });
     }
 
+    // Set PR status to converted_to_po
     await pool.query(
       'UPDATE purchase_requisitions SET status = ?, approved_by = ? WHERE id = ?',
-      ['approved', approverId, id]
+      ['converted_to_po', approverId, id]
     );
 
-    res.json({ message: 'Purchase Requisition approved successfully' });
+    // Auto-generate Purchase Order
+    const poId = crypto.randomUUID();
+    await pool.query(
+      `INSERT INTO purchase_orders 
+      (id, supplier_id, status, total_amount, company_id, created_by)
+      VALUES (?, NULL, 'pending', 0, ?, ?)`,
+      [poId, prs[0].company_id, approverId]
+    );
+
+    // Auto-generate Purchase Order Items
+    await pool.query(
+      `INSERT INTO purchase_order_items 
+      (order_id, item_id, item_name, quantity, price)
+      VALUES (?, ?, ?, ?, 0)`,
+      [poId, prs[0].item_id, prs[0].item_name, prs[0].quantity]
+    );
+
+    res.json({ message: 'Purchase Requisition approved and converted to PO successfully', poId });
   } catch (error) {
     console.error('Error approving PR:', error);
     res.status(500).json({ error: 'Failed to approve purchase requisition' });

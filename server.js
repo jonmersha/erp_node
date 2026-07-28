@@ -47,6 +47,7 @@ import crmRoutes from './src/services/sales-service/routes/crm.routes.js';
 import workflowRoutes from './src/services/master-data-service/routes/workflow.routes.js';
 import reportsRoutes from './src/services/master-data-service/routes/reports.routes.js';
 import backupRoutes from './src/services/master-data-service/routes/backup.routes.js';
+import notificationRoutes from './src/services/master-data-service/routes/notification.routes.js';
 import expenseRoutes from './src/services/finance-service/routes/expense.routes.js';
 import fleetRoutes from './src/services/quality-maintenance-service/routes/fleet.routes.js';
 import sourcingRoutes from './src/services/supply-chain-service/routes/sourcing.routes.js';
@@ -141,6 +142,7 @@ apiRouter.post('/upload', upload.single('image'), (req, res) => {
   res.json({ url });
 });
 
+apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/companies', companyRoutes);
 apiRouter.use('/erp-users', erpUserRoutes); // Handles ERP specific user data (company, roles)
 // Auth Routes moved to auth-service

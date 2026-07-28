@@ -59,8 +59,48 @@ export const createQualityCheck = async (req, res) => {
       [id, finalReferenceId, finalReferenceType, finalItemId, finalInspectorId, finalCheckDate, finalStatus, notes || '', JSON.stringify(finalChecklistResults), finalCompanyId]
     );
 
-    // If failed, auto-generate NCR
-    if (finalStatus === 'failed') {
+    // Algorithm Step 6: Post-Inspection Automated Actions
+    if (finalReferenceType === 'grn') {
+      if (finalStatus === 'passed') {
+        // Path A (Quality Pass):
+        // System updates Goods Received Note status to "inspected"
+        await pool.query('UPDATE grns SET status = ? WHERE id = ?', ['inspected', finalReferenceId]);
+        
+        // System updates purchase order status to "received"
+        const [grns] = await pool.query('SELECT purchase_order_id, warehouse_id FROM grns WHERE id = ?', [finalReferenceId]);
+        if (grns.length > 0) {
+           const { purchase_order_id, warehouse_id } = grns[0];
+           await pool.query('UPDATE purchase_orders SET status = ? WHERE id = ?', ['received', purchase_order_id]);
+           
+           // System increments stock balance quantity in warehouse inventory.
+           // First, find the quantity from the grn_items table for this item.
+           const [grnItems] = await pool.query('SELECT quantity FROM grn_items WHERE grn_id = ? AND item_id = ?', [finalReferenceId, finalItemId]);
+           if (grnItems.length > 0) {
+              const qty = grnItems[0].quantity;
+              
+              // Check if inventory record already exists for this unit_id and item_id
+              const [inv] = await pool.query('SELECT id, quantity FROM inventory WHERE unit_id = ? AND item_id = ?', [warehouse_id, finalItemId]);
+              if (inv.length > 0) {
+                 await pool.query('UPDATE inventory SET quantity = quantity + ? WHERE id = ?', [qty, inv[0].id]);
+              } else {
+                 const invId = crypto.randomUUID();
+                 await pool.query(
+                    `INSERT INTO inventory (id, unit_id, item_id, item_type, quantity, company_id) VALUES (?, ?, ?, 'material', ?, ?)`,
+                    [invId, warehouse_id, finalItemId, qty, finalCompanyId]
+                 );
+              }
+           }
+        }
+      } else if (finalStatus === 'failed' || finalStatus === 'quarantined') {
+        // Path B (Quality Fail): Auto-generate NCR with status open and disposition quarantine.
+        const ncrId = crypto.randomUUID();
+        await pool.query(
+          'INSERT INTO non_conformance_reports (id, quality_check_id, issue_description, severity, status, disposition, company_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [ncrId, id, 'Auto-generated NCR from failed/quarantined quality check', 'high', 'open', 'quarantine', finalCompanyId, finalInspectorId]
+        );
+      }
+    } else if (finalStatus === 'failed') {
+      // Legacy catch-all for other failed checks
       const ncrId = crypto.randomUUID();
       await pool.query(
         'INSERT INTO non_conformance_reports (id, quality_check_id, issue_description, severity, status, company_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -102,6 +142,46 @@ export const updateQualityCheck = async (req, res) => {
         id
       ]
     );
+
+    // Algorithm Step 6: Post-Inspection Automated Actions (on update)
+    if (current.reference_type === 'grn' && finalStatus !== current.status) {
+      if (finalStatus === 'passed') {
+        // Path A (Quality Pass):
+        // System updates Goods Received Note status to "inspected"
+        await pool.query('UPDATE grns SET status = ? WHERE id = ?', ['inspected', current.reference_id]);
+        
+        // System updates purchase order status to "received"
+        const [grns] = await pool.query('SELECT purchase_order_id, warehouse_id FROM grns WHERE id = ?', [current.reference_id]);
+        if (grns.length > 0) {
+           const { purchase_order_id, warehouse_id } = grns[0];
+           await pool.query('UPDATE purchase_orders SET status = ? WHERE id = ?', ['received', purchase_order_id]);
+           
+           // System increments stock balance quantity in warehouse inventory.
+           const [grnItems] = await pool.query('SELECT quantity FROM grn_items WHERE grn_id = ? AND item_id = ?', [current.reference_id, current.item_id]);
+           if (grnItems.length > 0) {
+              const qty = grnItems[0].quantity;
+              const [inv] = await pool.query('SELECT id, quantity FROM inventory WHERE unit_id = ? AND item_id = ?', [warehouse_id, current.item_id]);
+              if (inv.length > 0) {
+                 await pool.query('UPDATE inventory SET quantity = quantity + ? WHERE id = ?', [qty, inv[0].id]);
+              } else {
+                 const invId = crypto.randomUUID();
+                 await pool.query(
+                    `INSERT INTO inventory (id, unit_id, item_id, item_type, quantity, company_id) VALUES (?, ?, ?, 'material', ?, ?)`,
+                    [invId, warehouse_id, current.item_id, qty, current.company_id]
+                 );
+              }
+           }
+        }
+      } else if (finalStatus === 'failed' || finalStatus === 'quarantined') {
+        // Path B (Quality Fail): Auto-generate NCR with status open and disposition quarantine.
+        const ncrId = crypto.randomUUID();
+        await pool.query(
+          'INSERT INTO non_conformance_reports (id, quality_check_id, issue_description, severity, status, disposition, company_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [ncrId, id, 'Auto-generated NCR from failed/quarantined quality check', 'high', 'open', 'quarantine', current.company_id, current.inspector_id]
+        );
+      }
+    }
+
     res.json({ message: 'Quality check updated' });
   } catch (error) {
     console.error('Error updating quality check:', error);

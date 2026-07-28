@@ -790,11 +790,11 @@ CREATE TABLE IF NOT EXISTS \`purchase_order_items\` (
     await pool.query(`
 CREATE TABLE IF NOT EXISTS \`purchase_orders\` (
   \`id\` char(36) NOT NULL,
-  \`supplier_id\` char(36) NOT NULL,
+  \`supplier_id\` char(36) DEFAULT NULL,
   \`factory_id\` char(36) DEFAULT NULL,
   \`warehouse_id\` char(36) DEFAULT NULL,
-  \`status\` enum('pending','approved','shipped','received','cancelled') DEFAULT 'pending',
-  \`total_amount\` decimal(12,2) NOT NULL,
+  \`status\` enum('pending','pending_approval','approved','shipped','received','cancelled','rejected') DEFAULT 'pending',
+  \`total_amount\` decimal(12,2) DEFAULT 0.00,
   \`company_id\` char(36) NOT NULL,
   \`created_at\` datetime DEFAULT CURRENT_TIMESTAMP,
   \`created_by\` varchar(36) DEFAULT NULL,

@@ -173,6 +173,20 @@ export const approvePurchaseOrder = async (req, res) => {
   }
 };
 
+export const submitPurchaseOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query(
+      'UPDATE purchase_orders SET status = ? WHERE id = ? AND status = ?',
+      ['pending_approval', id, 'pending']
+    );
+    res.json({ message: 'Purchase order submitted for approval' });
+  } catch (error) {
+    console.error('Error submitting purchase order:', error);
+    res.status(500).json({ error: 'Failed to submit purchase order' });
+  }
+};
+
 export const rejectPurchaseOrder = async (req, res) => {
   try {
     const { id } = req.params;
