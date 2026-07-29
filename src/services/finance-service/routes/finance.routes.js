@@ -41,10 +41,14 @@ router.put('/invoices/:id', async (req, res) => {
   const { id } = req.params;
   const { status, amount, dueDate } = req.body;
   try {
-    await pool.query('UPDATE finance_invoices SET status = ?, amount = ?, due_date = ? WHERE id = ?', [status, amount, dueDate, id]);
+    const [result] = await pool.query('UPDATE finance_invoices SET status = ?, amount = ?, due_date = ? WHERE id = ?', [status, amount, dueDate, id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Invoice not found', invoiceId: id });
+    }
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update invoice' });
+    console.error('Error updating invoice:', error);
+    res.status(500).json({ error: 'Failed to update invoice', details: error.message, sqlMessage: error.sqlMessage });
   }
 });
 
