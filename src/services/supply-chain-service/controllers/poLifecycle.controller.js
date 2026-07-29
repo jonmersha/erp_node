@@ -18,19 +18,30 @@ export const getPOLifecycle = async (req, res) => {
     }
     const po = poRows[0];
 
-    // 2. Get PO Items (and see if they link to a PR)
+    // 2. Get PO Items with ordered quantities
     const [poItems] = await pool.query('SELECT * FROM purchase_order_items WHERE order_id = ?', [id]);
 
-    // 3. Get Weighbridge Logs
+    // 3. Get ALL Weighbridge Logs for this PO (multiple deliveries)
     const [weighbridgeLogs] = await pool.query(
-      'SELECT * FROM weighbridge_logs WHERE reference_type = "PO" AND reference_id = ? ORDER BY entry_time DESC',
+      'SELECT * FROM weighbridge_logs WHERE reference_type = "PO" AND reference_id = ? ORDER BY entry_time ASC',
       [id]
     );
 
-    // 4. Get GRNs
+    // 4. Get Quality Inspections linked to each weighbridge log
+    let qualityInspections = [];
+    if (weighbridgeLogs.length > 0) {
+      const wbIds = weighbridgeLogs.map(w => w.id);
+      const [qiRows] = await pool.query(
+        'SELECT * FROM quality_inspections WHERE weighbridge_log_id IN (?) ORDER BY created_at ASC',
+        [wbIds]
+      );
+      qualityInspections = qiRows;
+    }
+
+    // 5. Get GRNs
     const [grns] = await pool.query('SELECT * FROM grns WHERE purchase_order_id = ? ORDER BY created_at DESC', [id]);
 
-    // 5. Get Quality Checks linked to those GRNs
+    // 6. Get Quality Checks linked to GRNs (legacy path)
     let qualityChecks = [];
     if (grns.length > 0) {
       const grnIds = grns.map(g => g.id);
@@ -41,19 +52,39 @@ export const getPOLifecycle = async (req, res) => {
       qualityChecks = qcRows;
     }
 
-    // 6. Get Finance Invoices
+    // 7. Get Finance Invoices
     const [invoices] = await pool.query(
       'SELECT * FROM finance_invoices WHERE order_type = "purchase" AND order_id = ? ORDER BY created_at DESC',
       [id]
+    );
+
+    // 8. Calculate summary
+    const totalOrderedQty = poItems.reduce((sum, item) => sum + Number(item.quantity), 0);
+    const totalReceivedWeight = weighbridgeLogs.reduce((sum, log) => sum + Number(log.net_weight || log.gross_weight || 0), 0);
+    const totalInspected = qualityInspections.length;
+    const totalApprovedInspections = qualityInspections.filter(qi => qi.status === 'Approved').length;
+    const logsWithoutInspection = weighbridgeLogs.filter(
+      wl => !qualityInspections.some(qi => qi.weighbridge_log_id === wl.id)
     );
 
     res.json({
       po,
       poItems,
       weighbridgeLogs,
+      qualityInspections,
       grns,
       qualityChecks,
-      invoices
+      invoices,
+      summary: {
+        totalOrderedQty,
+        totalReceivedWeight,
+        totalLoads: weighbridgeLogs.length,
+        totalInspected,
+        totalApprovedInspections,
+        pendingInspectionCount: logsWithoutInspection.length,
+        fullyReceived: totalReceivedWeight >= totalOrderedQty,
+        fullyInspected: weighbridgeLogs.length > 0 && logsWithoutInspection.length === 0
+      }
     });
   } catch (error) {
     console.error('Error fetching PO lifecycle:', error);
